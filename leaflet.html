@@ -194,7 +194,7 @@
 
 
 
-        <form class="form-style-9">fa
+        <form class="form-style-9">
             <h1 class="title">Meshomatic</h1>
             <ul>
                 <li>Find location on map.</li>
@@ -229,7 +229,8 @@
             </ul>
         </form>
         <h4>notes:</h4>
-        <div class="notes">Soundvision seems to get particularly unhappy with detailed meshes and defaults to surfaces disabled. 
+        <div class="notes">Soundvision seems to get particularly unhappy with detailed meshes and defaults to surfaces
+            disabled.
             <br>Keeping mesh areas as small as possible definitely helps.
         </div>
         <br><Br>
@@ -251,9 +252,9 @@
         //         tileSize: 512,
         //         zoomOffset: -1
         //     });
-        document.getElementById("downloadMesh").onclick = function () { 
-            dumpPoints() 
-        };
+
+
+        document.getElementById("downloadMesh").onclick = function () { run() };
 
         var layerOsm = new L.TileLayer(
             'https://{s}.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
@@ -413,8 +414,9 @@
         }
 
         function setOriginImage() {
-           // var origin = L.distortableImageOverlay("https://i.postimg.cc/XY4fCqYw/axes.png", {
-            var origin = L.distortableImageOverlay("https://github.com/medgooroo/meshomatic/raw/main/axes.png", {
+            var origin = L.distortableImageOverlay("https://i.postimg.cc/XY4fCqYw/axes.png", {
+                // var origin = L.distortableImageOverlay("https://github.com/medgooroo/meshomatic/raw/main/axes.png", { // github serve this from somewhere else and CORS breaks 
+
                 actions: [
                     L.FreeRotateAction,
                     L.DeleteAction,
@@ -427,17 +429,34 @@
             originCollection.bringToFront();
         }
 
+        async function run() {
+            var b = document.getElementById("downloadMesh");
+            b.setAttribute('value', "Processing...");
+            setTimeout(function() { dumpPoints() }, 50);
+        }
 
-        function dumpPoints() {
+        async function reset() {
+            var b = document.getElementById("downloadMesh");
+            b.onclick = function () {
+                run();
+            };
+            b.setAttribute("value", "Download");
+        }
+
+        async function dumpPoints() {
+
             const imgs = imgCollection.getLayers(); // image
             const layer = drawnItems.getLayers(); // polygons
             const origin = originCollection.getLayers();
 
-
             if (origin.length < 1) {
                 alert("No origin defined");
+                reset();
                 return;
             }
+            var b = document.getElementById("downloadMesh");
+            b.setAttribute('value', "Processing...");
+            b.onclick = ''; // 
 
 
             var polyAsPoints = new Array();
@@ -457,10 +476,10 @@
                 }
                 var tris = earcut(polyAsPoints); // take those points and make a vert index for triangles.
                 const output = tris.map(i => shape[0][i]);   // remap the points into list of tris
-                genMesh(output);
+                genMesh(output); // just delay to let the dom update; set the label.
             }
             // fallback to just using the bounds of a loaded image.
-            else {
+            else if (imgs.length > 0) {
                 const corners = imgs[0].getCorners();
                 var tris = [ // convert image to 2 tris
                     corners[0],
@@ -472,6 +491,9 @@
                 ];
                 genMesh(tris);
 
+            }
+            else {
+                alert("Define a polygon or image to create a mesh");
             }
         }
 
@@ -489,7 +511,7 @@
             if (res == "l") meshZoom -= 2;
             if (res == "m") meshZoom -= 1;
             // do nowt for high res
-            
+
             const tLatLng = latlng2tile(bounds.getNorthWest(), meshZoom);
 
             const MAPBOX_KEY = "pk.eyJ1IjoibWVkZ29vcm9vIiwiYSI6ImNrbG1vMWlpbzBheTkydm4xdnRnMHdiOWYifQ.HTDF9_y0QhC2Ir_bkTKmXQ";
@@ -635,6 +657,7 @@
             if (fType == "obj") writeObj(mesh);
             if (fType == "dbacv") writeArrayCalc(mesh);
             if (fType == "txt") writeSoundVision(mesh);
+            reset();
             //            <option value="obj">.obj file</option>
             //            <option value="dbacv">.dbacv for ArrayCalc</option>
             //            <option value="txt">
