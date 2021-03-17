@@ -247,8 +247,9 @@ window.onload = (event) => {
 
         const tLatLng = latlng2tile(bounds.getNorthWest(), meshZoom);
 
-        const MAPBOX_KEY = "pk.eyJ1IjoibWVkZ29vcm9vIiwiYSI6ImNrbTZ1eTViaTBydmoycW42aDRjbm9ubWgifQ.GpEjpbJYDHzK4lXHo_Mu9A";
-        
+        //const MAPBOX_KEY = "pk.eyJ1IjoibWVkZ29vcm9vIiwiYSI6ImNrbTZ1eTViaTBydmoycW42aDRjbm9ubWgifQ.GpEjpbJYDHzK4lXHo_Mu9A";
+        const MAPBOX_KEY = "pk.eyJ1IjoibWVkZ29vcm9vIiwiYSI6ImNrbTZ6N2dndjB0M2Eydm54bndleHJyM2QifQ.EJ7oCU3OavcIK4iNHNtcgA";
+
         const elevImage = await getRegion(tLatLng.tLat, tLatLng.tLng, meshZoom, `https://api.mapbox.com/v4/mapbox.terrain-rgb/zoom/tLong/tLat.pngraw?access_token=${MAPBOX_KEY}`);
         const canvas = document.createElement("canvas");
 
@@ -373,6 +374,7 @@ window.onload = (event) => {
         if (fType == "obj") writeObj(mesh);
         if (fType == "dbacv") writeArrayCalc(mesh);
         if (fType == "txt") writeSoundVision(mesh);
+        if (fType == "dae") writeCollada(mesh);
         reset();
     }
 

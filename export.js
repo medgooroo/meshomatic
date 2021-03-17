@@ -1,4 +1,3 @@
-
 function writeSoundVision(mesh) {
     // https://en.wikipedia.org/wiki/Wavefront_.obj_file - NOT ZERO INDEXED.
 
@@ -172,7 +171,7 @@ function writeArrayCalc(mesh) {
         roomObjectGroup.appendChild(roomObject);
         triCount++;
     }
-    
+
     //objText += mesh.vertices[mesh.triangles[i] * 3] + "," + mesh.vertices[mesh.triangles[i] * 3 + 1] + "," + mesh.vertices[mesh.triangles[i] * 3 + 2] + "\n";
     //objText += mesh.vertices[mesh.triangles[i + 1] * 3] + "," + mesh.vertices[mesh.triangles[i + 1] * 3 + 1] + "," + mesh.vertices[mesh.triangles[i + 1] * 3 + 2] + "\n";
     //objText += mesh.vertices[mesh.triangles[i + 2] * 3] + "," + mesh.vertices[mesh.triangles[i + 2] * 3 + 1] + "," + mesh.vertices[mesh.triangles[i + 2] * 3 + 2] + "\n";
@@ -219,6 +218,140 @@ function writeArrayCalc(mesh) {
 
 }
 
+
+
+function writeCollada(mesh) {
+    // https://www.codeproject.com/Articles/625701/COLLADA-TinyXML-and-OpenGL
+    var doc = document.implementation.createDocument("", "", null);
+    var main = doc.createElement("COLLADA");
+
+    var asset = doc.createElement("asset");
+    main.appendChild(asset);
+    var unit = doc.createElement("unit");
+    unit.setAttribute("meter", "1.0");
+    unit.setAttribute("name", "meter");
+    asset.appendChild(unit);
+
+    var lib_geo = doc.createElement("library_geometries");
+    main.appendChild(lib_geo);
+    var geom = doc.createElement("geometry");
+    geom.setAttribute("id", "aLovelyMesh");
+    lib_geo.appendChild(geom);
+    var meshTag = doc.createElement("mesh");
+    geom.appendChild(meshTag);
+    var source = doc.createElement("source");
+    source.setAttribute("id", "verts");
+    source.setAttribute("name", "position");
+    meshTag.appendChild(source);
+
+    var floatArray = doc.createElement("float_array");
+    floatArray.setAttribute("id", "vertFloats");
+    floatArray.setAttribute("count", mesh.vertices.length);
+    var floatString = "";
+    for (var i = 0; i < mesh.vertices.length; i++) {
+        floatString += mesh.vertices[i] + " ";
+    }
+    floatArray.textContent = floatString;
+    source.appendChild(floatArray);
+
+    var technique = doc.createElement("technique_common");
+    source.appendChild(technique);
+    var accessor = doc.createElement("accessor");
+    accessor.setAttribute("count", mesh.vertices.length/3);
+    accessor.setAttribute("offset", "0");
+    accessor.setAttribute("source", "#vertFloats");
+    accessor.setAttribute("stride", "3");
+    technique.appendChild(accessor);
+
+    var param = doc.createElement("param");
+    param.setAttribute("name", "X");
+    param.setAttribute("type", "float");
+    accessor.appendChild(param);
+
+    param = doc.createElement("param");
+    param.setAttribute("name", "Y");
+    param.setAttribute("type", "float");
+    accessor.appendChild(param);
+    
+    param = doc.createElement("param");
+    param.setAttribute("name", "Z");
+    param.setAttribute("type", "float");
+    accessor.appendChild(param);
+    
+
+    var verticesTag = doc.createElement("vertices");
+    verticesTag.setAttribute("id", "vertices");
+    meshTag.appendChild(verticesTag);
+    var inputTag = doc.createElement("input");
+    inputTag.setAttribute("semantic", "POSITION");
+    inputTag.setAttribute("source", "#verts");
+    verticesTag.appendChild(inputTag);
+    var trianglesTag = doc.createElement("triangles");
+    trianglesTag.setAttribute("count", mesh.triangles.length);
+    meshTag.appendChild(trianglesTag);
+    var triInputTag = doc.createElement("input");
+    triInputTag.setAttribute("offset", "0");
+    triInputTag.setAttribute("semantic","VERTEX");
+    triInputTag.setAttribute("source", "#vertices");
+    trianglesTag.appendChild(triInputTag);
+    var pTag = doc.createElement("p");
+    var pStr = "";
+    for (var i = 0; i < mesh.triangles.length; i++) {
+        pStr += mesh.triangles[i] + " ";
+    }
+    pTag.textContent = pStr;
+    trianglesTag.appendChild(pTag);
+
+
+    var lvs = doc.createElement("library_visual_scenes");
+    var vs = doc.createElement("visual_scene");
+    vs.setAttribute("id", "vsNode");
+    vs.setAttribute("name", "vs");
+    var node = doc.createElement("node");
+    node.setAttribute("id", "node");
+    node.setAttribute("name", "node");
+    vs.appendChild(node);
+    var instance = doc.createElement("instance_geometry");
+    instance.setAttribute("url", "#aLovelyMesh");
+    node.appendChild(instance);
+    lvs.appendChild(vs);
+    main.appendChild(lvs);
+
+    var scene = doc.createElement("scene");
+    main.appendChild(scene);
+    var el = doc.createElement("instance_visual_scene");
+    el.setAttribute("url", "#vsNode");
+    scene.appendChild(el);
+
+
+    ////////////////////////////////////////////////////////////////////// 
+
+    var xmlText = new XMLSerializer().serializeToString(main);
+    var blob = new Blob([xmlText], {
+        type: "application/xml;charset=utf-8;"
+    });
+    const blobURL = window.URL.createObjectURL(blob);
+
+    const tempLink = document.createElement('a');
+    tempLink.style.display = 'none';
+    tempLink.href = blobURL;
+    tempLink.setAttribute('download', 'mesh.dae');
+    // Safari thinks _blank anchor are pop ups. We only want to set _blank
+    // target if the browser does not support the HTML5 download attribute.
+    // This allows you to download files in desktop safari if pop up blocking
+    // is enabled.
+    if (typeof tempLink.download === 'undefined') {
+        tempLink.setAttribute('target', '_blank');
+    }
+    document.body.appendChild(tempLink);
+    tempLink.click();
+    document.body.removeChild(tempLink);
+    setTimeout(() => {
+        // For Firefox it is necessary to delay revoking the ObjectURL
+        window.URL.revokeObjectURL(blobURL);
+    }, 100);
+
+}
 
 
 
