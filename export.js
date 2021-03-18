@@ -50,7 +50,6 @@ function writeSoundVision(mesh) {
 
 function writeObj(mesh) {
     // https://en.wikipedia.org/wiki/Wavefront_.obj_file - NOT ZERO INDEXED.
-
     var objText = "";
     for (var i = 0; i < mesh.vertices.length; i = i + 3) {
         objText += "v " + mesh.vertices[i] + " " + mesh.vertices[i + 1] + " " + mesh.vertices[i + 2] + "\n";
@@ -221,6 +220,15 @@ function writeArrayCalc(mesh) {
 
 
 function writeCollada(mesh) {
+    for (var i = 0; i < mesh.vertices.length; i = i + 3) {
+        //  switch coord system
+        var x = mesh.vertices[i];
+        var y = mesh.vertices[i+1];
+        var z = mesh.vertices[i+2];
+        mesh.vertices[i] =  z;
+        mesh.vertices[i + 1] = x;
+        mesh.vertices[i + 2] =  y;
+    }
     // https://www.codeproject.com/Articles/625701/COLLADA-TinyXML-and-OpenGL
     var doc = document.implementation.createDocument("", "", null);
     var main = doc.createElement("COLLADA");
@@ -231,6 +239,9 @@ function writeCollada(mesh) {
     unit.setAttribute("meter", "1.0");
     unit.setAttribute("name", "meter");
     asset.appendChild(unit);
+    var ax = doc.createElement("up_axis");
+    ax.innerText = "Z_UP";
+    asset.appendChild(ax);
 
     var lib_geo = doc.createElement("library_geometries");
     main.appendChild(lib_geo);
