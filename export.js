@@ -1,7 +1,4 @@
 function writeSoundVision(mesh) {
-    // https://en.wikipedia.org/wiki/Wavefront_.obj_file - NOT ZERO INDEXED.
-
-
     var objText = `"; Exported by meshomatic thing"
 "; "
 ";   using Outside is front (white)"
@@ -44,8 +41,45 @@ function writeSoundVision(mesh) {
         // For Firefox it is necessary to delay revoking the ObjectURL
         window.URL.revokeObjectURL(blobURL);
     }, 100);
+}
+function writeBlueprint(mesh) {
+    var objText = "";
+    for (var i = 0; i < 8; i++) objText += '";"\n';
+    objText += '"; LengthUnit","m"\n";"\n';
 
+    var triCount = 0;
+    for (var i = 0; i < mesh.triangles.length; i = i + 3) {
+        objText += '"Label","ground mesh (' + triCount + ')"\n';
+        objText += mesh.vertices[mesh.triangles[i] * 3] + "," + mesh.vertices[mesh.triangles[i] * 3 + 1] + "," + mesh.vertices[mesh.triangles[i] * 3 + 2] + "\n";
+        objText += mesh.vertices[mesh.triangles[i + 1] * 3] + "," + mesh.vertices[mesh.triangles[i + 1] * 3 + 1] + "," + mesh.vertices[mesh.triangles[i + 1] * 3 + 2] + "\n";
+        objText += mesh.vertices[mesh.triangles[i + 2] * 3] + "," + mesh.vertices[mesh.triangles[i + 2] * 3 + 1] + "," + mesh.vertices[mesh.triangles[i + 2] * 3 + 2] + "\n";
+        objText += mesh.vertices[mesh.triangles[i] * 3] + "," + mesh.vertices[mesh.triangles[i] * 3 + 1] + "," + mesh.vertices[mesh.triangles[i] * 3 + 2] + "\n"; // if it smells like a quad...
+        objText += '";"\n';
+        triCount++;
+    }
+    var blob = new Blob([objText], {
+        type: "text/plain;charset=utf-8;"
+    });
+    const blobURL = window.URL.createObjectURL(blob);
 
+    const tempLink = document.createElement('a');
+    tempLink.style.display = 'none';
+    tempLink.href = blobURL;
+    tempLink.setAttribute('download', 'mesh.xar');
+    // Safari thinks _blank anchor are pop ups. We only want to set _blank
+    // target if the browser does not support the HTML5 download attribute.
+    // This allows you to download files in desktop safari if pop up blocking
+    // is enabled.
+    if (typeof tempLink.download === 'undefined') {
+        tempLink.setAttribute('target', '_blank');
+    }
+    document.body.appendChild(tempLink);
+    tempLink.click();
+    document.body.removeChild(tempLink);
+    setTimeout(() => {
+        // For Firefox it is necessary to delay revoking the ObjectURL
+        window.URL.revokeObjectURL(blobURL);
+    }, 100);
 }
 
 function writeObj(mesh) {

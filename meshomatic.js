@@ -69,10 +69,7 @@ window.onload = (event) => {
     };
     L.control.layers(baseMaps, overlayMaps).addTo(map);
 
-    //map.addLayer(L.gridLayer.elevLayer());
-
     L.control.scale({ maxWidth: 240, metric: true, imperial: false, position: 'bottomleft' }).addTo(map);
-
 
     //////////////////////////////////////////////
     L.Control.manipControl = L.Control.extend({
@@ -130,12 +127,13 @@ window.onload = (event) => {
         reader.onload = L.Util.bind(function (e) {
             var img = L.distortableImageOverlay(reader.result, {
                 selected: true,
-                actions: [L.ScaleAction,
-                L.RotateAction,
-                L.DragAction,
-                L.OpacityAction,
-                L.DeleteAction,
-                L.LockAction
+                actions: [
+                    L.ScaleAction,
+                    L.RotateAction,
+                    L.DragAction,
+                    L.OpacityAction,
+                    L.DeleteAction,
+                    L.LockAction
                 ]
             });
             imgCollection.addLayer(img);
@@ -161,6 +159,7 @@ window.onload = (event) => {
 
     async function run() {
         var b = document.getElementById("downloadMesh");
+        b.onclick = function () {};
         b.setAttribute('value', "Processing...");
         setTimeout(function () { dumpPoints() }, 50);
     }
@@ -246,13 +245,13 @@ window.onload = (event) => {
         const tLatLng = latlng2tile(bounds.getNorthWest(), meshZoom);
 
         const MAPBOX_KEY = "pk.eyJ1IjoibWVkZ29vcm9vIiwiYSI6ImNrbTZ1eTViaTBydmoycW42aDRjbm9ubWgifQ.GpEjpbJYDHzK4lXHo_Mu9A";
-
+        //const MAPBOX_KEY = "pk.eyJ1IjoibWVkZ29vcm9vIiwiYSI6ImNrbTZ6N2dndjB0M2Eydm54bndleHJyM2QifQ.EJ7oCU3OavcIK4iNHNtcgA";
         const elevImage = await getRegion(tLatLng.tLat, tLatLng.tLng, meshZoom, `https://api.mapbox.com/v4/mapbox.terrain-rgb/zoom/tLong/tLat.pngraw?access_token=${MAPBOX_KEY}`);
         const canvas = document.createElement("canvas");
 
         //const canvas = document.getElementById('elevCanvas');
         ctx = canvas.getContext("2d");
-        canvas.width = 3 * 256;
+        canvas.width = 3 * 256; 
         canvas.height = 3 * 256;
         const elevSize = elevImage.width; // meshes must be square
 
@@ -277,7 +276,7 @@ window.onload = (event) => {
         // Draw the calculated elev image // We don't really need to do this.
         var imgData = ctx.createImageData(elevSize, elevSize);
 
-        ctx.putImageData(imgData, 0, 0);
+        // ctx.putImageData(imgData, 0, 0);
 
         // expand elev with arbitrary size to 2^n  + 1
         const paddedSize = 1 + Math.pow(2, Math.ceil(Math.log(elevSize) / Math.log(2)));
@@ -335,8 +334,8 @@ window.onload = (event) => {
         // figure the center of the user defined origin image
         const userOrigin = originCollection.getLayers()
         const userOriginCenter = userOrigin[0].getCenter()
-        const userOriginCenterPt = crs.latLngToPoint(userOriginCenter, meshZoom);
         // move it to pixel coords
+        const userOriginCenterPt = crs.latLngToPoint(userOriginCenter, meshZoom);
         userOriginCenterPt.x -= meshOrig.x;
         userOriginCenterPt.y -= meshOrig.y;
         // get height at the user origin point
@@ -355,7 +354,7 @@ window.onload = (event) => {
             mesh.vertices[i] = (x * Math.cos(angle)) - (y * Math.sin(angle)); // x 
             mesh.vertices[i + 1] = (x * Math.sin(angle)) + (y * Math.cos(angle)); // y 
         }
-
+        //  At zoom 0, one pixel would equal 156543.03 meters (assuming a tile size of 256 px):
         const mtrsPerPix = (156543.03 * Math.cos(Math.PI / 180 * lat) / (Math.pow(2, meshZoom)));
         // x and y are in pix. z is in metres
         for (var i = 0; i < mesh.vertices.length; i = i + 3) {
@@ -372,6 +371,7 @@ window.onload = (event) => {
         if (fType == "dbacv") writeArrayCalc(mesh);
         if (fType == "txt") writeSoundVision(mesh);
         if (fType == "dae") writeCollada(mesh);
+        if (fType == "bprint") writeBlueprint(mesh);
         reset();
     }
 
