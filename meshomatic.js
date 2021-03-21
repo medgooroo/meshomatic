@@ -159,7 +159,7 @@ window.onload = (event) => {
 
     async function run() {
         var b = document.getElementById("downloadMesh");
-        b.onclick = function () {};
+        b.onclick = function () { };
         b.setAttribute('value', "Processing...");
         setTimeout(function () { dumpPoints() }, 50);
     }
@@ -236,22 +236,25 @@ window.onload = (event) => {
         var meshZoom = Math.floor(Math.abs(Math.log2(distance / metresAtZeroZoom)));  // zoom level to fit image well
         if (meshZoom > 15) meshZoom = 15;  // clamp to maximum resolution of data
         // find the first tile that contains the image 
+        var err = 0.1;
         e = document.getElementById("res");
         res = e.options[e.selectedIndex].value;
-        if (res == "l") meshZoom -= 2;
-        if (res == "m") meshZoom -= 1;
+        if (res == "vl") err = 0.75;
+        if (res == "l") err = 0.5;
+        if (res == "m") err = 0.2;
+    
         // do nowt for high res
 
         const tLatLng = latlng2tile(bounds.getNorthWest(), meshZoom);
 
-        const MAPBOX_KEY = "pk.eyJ1IjoibWVkZ29vcm9vIiwiYSI6ImNrbTZ1eTViaTBydmoycW42aDRjbm9ubWgifQ.GpEjpbJYDHzK4lXHo_Mu9A";
-        //const MAPBOX_KEY = "pk.eyJ1IjoibWVkZ29vcm9vIiwiYSI6ImNrbTZ6N2dndjB0M2Eydm54bndleHJyM2QifQ.EJ7oCU3OavcIK4iNHNtcgA";
+        //const MAPBOX_KEY = "pk.eyJ1IjoibWVkZ29vcm9vIiwiYSI6ImNrbTZ1eTViaTBydmoycW42aDRjbm9ubWgifQ.GpEjpbJYDHzK4lXHo_Mu9A";
+        const MAPBOX_KEY = "pk.eyJ1IjoibWVkZ29vcm9vIiwiYSI6ImNrbTZ6N2dndjB0M2Eydm54bndleHJyM2QifQ.EJ7oCU3OavcIK4iNHNtcgA";
         const elevImage = await getRegion(tLatLng.tLat, tLatLng.tLng, meshZoom, `https://api.mapbox.com/v4/mapbox.terrain-rgb/zoom/tLong/tLat.pngraw?access_token=${MAPBOX_KEY}`);
         const canvas = document.createElement("canvas");
 
         //const canvas = document.getElementById('elevCanvas');
         ctx = canvas.getContext("2d");
-        canvas.width = 3 * 256; 
+        canvas.width = 3 * 256;
         canvas.height = 3 * 256;
         const elevSize = elevImage.width; // meshes must be square
 
@@ -308,7 +311,7 @@ window.onload = (event) => {
         //
         const martini = new Martini(paddedSize);
         const tile = martini.createTile(paddedElev);
-        const mesh = tile.getBoundedMesh(0.1, pointsToMeshReferenced);
+        const mesh = tile.getBoundedMesh(err, pointsToMeshReferenced);
 
         // draw a mesh
         // for (var i = 0; i < mesh.triangles.length; i = i + 3) {
@@ -372,6 +375,7 @@ window.onload = (event) => {
         if (fType == "txt") writeSoundVision(mesh);
         if (fType == "dae") writeCollada(mesh);
         if (fType == "bprint") writeBlueprint(mesh);
+        if (fType == "mappXML") writeMappXML(mesh);
         reset();
     }
 

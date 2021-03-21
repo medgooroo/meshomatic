@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MAPP3D>
+    <units>
+        <distanceUnit>Meters</distanceUnit>
+        <weightUnit>Kilograms</weightUnit>
+        <temperatureUnit>Celcius</temperatureUnit>
+        <pressureUnit>Millibars</pressureUnit>
+    </units>
+    <altValues>
+        <alt800Value>800</alt800Value>
+        <alt2200Value>2200</alt2200Value>
+    </altValues>
+    <naturalEnvironment>
+        <temperature>20</temperature>
+        <relativeHumidity>50</relativeHumidity>
+        <pressure>1013.25</pressure>
+        <useAirAttenuation>true</useAirAttenuation>
+        <altitude>below800meters</altitude>
+    </naturalEnvironment>
+    <gridLimits>
+        <showGrid>true</showGrid>
+        <showAxis>true</showAxis>
+        <showGridScale>false</showGridScale>
+        <xMin>-15</xMin>
+        <xMax>15</xMax>
+        <yMin>-15</yMin>
+        <yMax>15</yMax>
+        <zMin>-50</zMin>
+        <zMax>120</zMax>
+        <gridOpacity>0.5</gridOpacity>
+        <resolutionType>medium</resolutionType>
+        <AutoGrid>1</AutoGrid>
+    </gridLimits>
+    <Dithering>
+        <useDithering>true</useDithering>
+        <ditherPercent>0</ditherPercent>
+    </Dithering>
+    <meshDensity>
+        <sizeOfTriangle>0.4</sizeOfTriangle>
+    </meshDensity>
+    <meshType>
+        <type>traditionalMesh</type>
+    </meshType>
+    <pressureMapOpacity>
+        <opacity>1</opacity>
+    </pressureMapOpacity>
+    <splSettings>
+        <SplorAtt>splSelected</SplorAtt>
+        <splMaxValue>110</splMaxValue>
+        <splRange>42</splRange>
+        <colorPalette>spl256Colors</colorPalette>
+        <attenuationRange>12</attenuationRange>
+        <SPLMaxValueAuto>true</SPLMaxValueAuto>
+        <SPLRangeAuto>true</SPLRangeAuto>
+        <AttenuationRangeAuto>true</AttenuationRangeAuto>
+    </splSettings>
+    <measurementViewer>
+        <verticalAxisRange>90 dB</verticalAxisRange>
+        <verticalAxisResolution>10 dB</verticalAxisResolution>
+        <horizontalAxisRange>Full Range</horizontalAxisRange>
+        <ifftWindowSize>140 ms</ifftWindowSize>
+        <headroomMaxSPL>Auto</headroomMaxSPL>
+        <enableWindowCentering>true</enableWindowCentering>
+        <windowCenterRange>45</windowCenterRange>
+    </measurementViewer>
+    <predictionToolBar>
+        <bandwidthRangeIndex>0</bandwidthRangeIndex>
+        <octaveRangeIndex>0</octaveRangeIndex>
+        <frequencyValue>4000</frequencyValue>
+        <frequencyIndex>7</frequencyIndex>
+        <electricalConsumption>
+            <voltageConsumed>230v</voltageConsumed>
+            <maxContinuous>0.3</maxContinuous>
+            <maxContinuousPlus30Percent>0.39</maxContinuousPlus30Percent>
+        </electricalConsumption>
+    </predictionToolBar>
+    <projectProperties>
+        <projectTitle>Unnamed</projectTitle>
+        <venue></venue>
+        <designer></designer>
+        <date>2021/03/20</date>
+        <notes></notes>
+        <templateFlag>2</templateFlag>
+    </projectProperties>
+    <deviceConfiguration>
+        <microphoneConfigurations/>
+        <processorConfigurations/>
+    </deviceConfiguration>
+    <layers>
+        <layer>
+            <layerGUID>{14c43ca4-ac31-4ae2-abbe-7abf462bf206}</layerGUID>
+            <layerName>Layer 0</layerName>
+            <visible>true</visible>
+            <locked>false</locked>
+            <colorRed>1</colorRed>
+            <colorGreen>1</colorGreen>
+            <colorBlue>0</colorBlue>
+            <colorAlpha>1</colorAlpha>
+            <colorIndex>1</colorIndex>
+            <layerIndex>0</layerIndex>
+            <colorRedInactive>0.2</colorRedInactive>
+            <colorGreenInactive>0.2</colorGreenInactive>
+            <colorBlueInactive>0.2</colorBlueInactive>
+            <colorAlphaInactive>1</colorAlphaInactive>
+        </layer>
+    </layers>
+    <layerSnapshots>
+        <CurrentLayerSnapShotName></CurrentLayerSnapShotName>
+    </layerSnapshots>
+    <microphone/>
+    <activeLayerName>Layer 0</activeLayerName>
+    <workspaceSettings>
+        <cameraPoint>0</cameraPoint>
+    </workspaceSettings>
+    <microphones/>
+    <viewPoints>
+        <currentViewPort>Viewport 1</currentViewPort>
+        <isMultipleView>false</isMultipleView>
+        <IdOfView1>Camera 4294967291</IdOfView1>
+        <IdOfView2>Camera 4294967295</IdOfView2>
+        <IdOfView3>Camera 3</IdOfView3>
+        <IdOfView4>Camera 1</IdOfView4>
+    </viewPoints>
+    <appearance>
+        <geometryRepresentation>0</geometryRepresentation>
+        <objectRepresentation>1</objectRepresentation>
+        <viewProjection>1</viewProjection>
+        <showAnnotations>false</showAnnotations>
+        <showLayerColour>true</showLayerColour>
+        <showCentreLineColour>true</showCentreLineColour>
+        <showListeningSurface>true</showListeningSurface>
+        <COGExtentionSetting>1</COGExtentionSetting>
+        <backgroundMode>true</backgroundMode>
+    </appearance>
+    <processorSettings>
+        <atmosCorrResponse>false</atmosCorrResponse>
+    </processorSettings>
+    <applicationMode>
+        <applicationMode>PUBLIC</applicationMode>
+    </applicationMode>
+    <markerVisibility>
+        <centreLinesVisible>false</centreLinesVisible>
+        <cogLineVisible>false</cogLineVisible>
+        <baseRPmarkerVisible>false</baseRPmarkerVisible>
+        <frontRPmarkerVisible>false</frontRPmarkerVisible>
+        <rearRPmarkerVisible>false</rearRPmarkerVisible>
+    </markerVisibility>
+</MAPP3D>

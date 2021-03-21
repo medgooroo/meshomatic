@@ -21,27 +21,9 @@ function writeSoundVision(mesh) {
     var blob = new Blob([objText], {
         type: "text/plain;charset=utf-8;"
     });
-    const blobURL = window.URL.createObjectURL(blob);
-
-    const tempLink = document.createElement('a');
-    tempLink.style.display = 'none';
-    tempLink.href = blobURL;
-    tempLink.setAttribute('download', 'mesh.txt');
-    // Safari thinks _blank anchor are pop ups. We only want to set _blank
-    // target if the browser does not support the HTML5 download attribute.
-    // This allows you to download files in desktop safari if pop up blocking
-    // is enabled.
-    if (typeof tempLink.download === 'undefined') {
-        tempLink.setAttribute('target', '_blank');
-    }
-    document.body.appendChild(tempLink);
-    tempLink.click();
-    document.body.removeChild(tempLink);
-    setTimeout(() => {
-        // For Firefox it is necessary to delay revoking the ObjectURL
-        window.URL.revokeObjectURL(blobURL);
-    }, 100);
+    saveAs(blob, "mesh.txt");
 }
+
 function writeBlueprint(mesh) {
     var objText = "";
     for (var i = 0; i < 8; i++) objText += '";"\n';
@@ -94,27 +76,7 @@ function writeObj(mesh) {
     var blob = new Blob([objText], {
         type: "text/plain;charset=utf-8;"
     });
-    const blobURL = window.URL.createObjectURL(blob);
-
-    const tempLink = document.createElement('a');
-    tempLink.style.display = 'none';
-    tempLink.href = blobURL;
-    tempLink.setAttribute('download', 'mesh.obj');
-    // Safari thinks _blank anchor are pop ups. We only want to set _blank
-    // target if the browser does not support the HTML5 download attribute.
-    // This allows you to download files in desktop safari if pop up blocking
-    // is enabled.
-    if (typeof tempLink.download === 'undefined') {
-        tempLink.setAttribute('target', '_blank');
-    }
-    document.body.appendChild(tempLink);
-    tempLink.click();
-    document.body.removeChild(tempLink);
-    setTimeout(() => {
-        // For Firefox it is necessary to delay revoking the ObjectURL
-        window.URL.revokeObjectURL(blobURL);
-    }, 100);
-
+    saveAs(blob, "mesh.obj");
 }
 
 function writeArrayCalc(mesh) {
@@ -228,26 +190,7 @@ function writeArrayCalc(mesh) {
     var blob = new Blob([xmlText], {
         type: "application/xml;charset=utf-8;"
     });
-    const blobURL = window.URL.createObjectURL(blob);
-
-    const tempLink = document.createElement('a');
-    tempLink.style.display = 'none';
-    tempLink.href = blobURL;
-    tempLink.setAttribute('download', 'mesh.dbacv');
-    // Safari thinks _blank anchor are pop ups. We only want to set _blank
-    // target if the browser does not support the HTML5 download attribute.
-    // This allows you to download files in desktop safari if pop up blocking
-    // is enabled.
-    if (typeof tempLink.download === 'undefined') {
-        tempLink.setAttribute('target', '_blank');
-    }
-    document.body.appendChild(tempLink);
-    tempLink.click();
-    document.body.removeChild(tempLink);
-    setTimeout(() => {
-        // For Firefox it is necessary to delay revoking the ObjectURL
-        window.URL.revokeObjectURL(blobURL);
-    }, 100);
+    saveAs(blob, "mesh.dbacv");
 
 }
 
@@ -274,7 +217,7 @@ function writeCollada(mesh) {
     unit.setAttribute("name", "meter");
     asset.appendChild(unit);
     var ax = doc.createElement("up_axis");
-    ax.innerText = "Z_UP";
+    ax.textContent = "Z_UP";
     asset.appendChild(ax);
 
     var lib_geo = doc.createElement("library_geometries");
@@ -302,7 +245,7 @@ function writeCollada(mesh) {
     var technique = doc.createElement("technique_common");
     source.appendChild(technique);
     var accessor = doc.createElement("accessor");
-    accessor.setAttribute("count", mesh.vertices.length/3);
+    accessor.setAttribute("count", mesh.vertices.length / 3);
     accessor.setAttribute("offset", "0");
     accessor.setAttribute("source", "#vertFloats");
     accessor.setAttribute("stride", "3");
@@ -317,12 +260,12 @@ function writeCollada(mesh) {
     param.setAttribute("name", "Y");
     param.setAttribute("type", "float");
     accessor.appendChild(param);
-    
+
     param = doc.createElement("param");
     param.setAttribute("name", "Z");
     param.setAttribute("type", "float");
     accessor.appendChild(param);
-    
+
 
     var verticesTag = doc.createElement("vertices");
     verticesTag.setAttribute("id", "vertices");
@@ -336,7 +279,7 @@ function writeCollada(mesh) {
     meshTag.appendChild(trianglesTag);
     var triInputTag = doc.createElement("input");
     triInputTag.setAttribute("offset", "0");
-    triInputTag.setAttribute("semantic","VERTEX");
+    triInputTag.setAttribute("semantic", "VERTEX");
     triInputTag.setAttribute("source", "#vertices");
     trianglesTag.appendChild(triInputTag);
     var pTag = doc.createElement("p");
@@ -375,12 +318,17 @@ function writeCollada(mesh) {
     var blob = new Blob([xmlText], {
         type: "application/xml;charset=utf-8;"
     });
-    const blobURL = window.URL.createObjectURL(blob);
+    saveAs(blob, "mesh.dae");
+}
 
+
+
+function saveAs(content, fName) {
+    const blobURL = window.URL.createObjectURL(content);
     const tempLink = document.createElement('a');
     tempLink.style.display = 'none';
     tempLink.href = blobURL;
-    tempLink.setAttribute('download', 'mesh.dae');
+    tempLink.setAttribute('download', fName);
     // Safari thinks _blank anchor are pop ups. We only want to set _blank
     // target if the browser does not support the HTML5 download attribute.
     // This allows you to download files in desktop safari if pop up blocking
@@ -395,8 +343,4 @@ function writeCollada(mesh) {
         // For Firefox it is necessary to delay revoking the ObjectURL
         window.URL.revokeObjectURL(blobURL);
     }, 100);
-
 }
-
-
-

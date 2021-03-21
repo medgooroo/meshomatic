@@ -1,0 +1,19 @@
+{
+  "name": "meshomatic",
+  "version": "0.0.1",
+  "description": "contour mapping javascript thing for sound reinforcement.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/medgooroo/meshomatic.git"
+  },
+  "author": "jwalton",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/medgooroo/meshomatic/issues"
+  },
+  "homepage": "https://github.com/medgooroo/meshomatic#readme",
+}

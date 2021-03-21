@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MeasurementViewer>
+    <Ifft>
+        <autoDelayDuration>8.80227e+15</autoDelayDuration>
+        <delayValue>1.7248e-153</delayValue>
+        <IsMaxResultPlot>false</IsMaxResultPlot>
+        <IsMaxRoomProcessorPlot>false</IsMaxRoomProcessorPlot>
+        <IsMaxPhasePlot>false</IsMaxPhasePlot>
+        <IsMaxImpulsePlot>false</IsMaxImpulsePlot>
+        <frequencyResponse1>Result Amplitude</frequencyResponse1>
+        <frequencyResponse2>Room + Processor Amplitude</frequencyResponse2>
+        <frequencyResponse3>Result Phase</frequencyResponse3>
+        <frequencyResponse4>IFFT</frequencyResponse4>
+        <ifftAnalysisTime>+/- 140 ms</ifftAnalysisTime>
+        <peakImpulse>2.95987e-260</peakImpulse>
+        <processorInverted>1</processorInverted>
+        <smoothing>No Smoothing</smoothing>
+        <ResultXAxisRange>Full Range</ResultXAxisRange>
+        <RoomProcessorXAxisRange>Full Range</RoomProcessorXAxisRange>
+        <PhaseXAxisRange>Full Range</PhaseXAxisRange>
+        <IfftXAxisRange></IfftXAxisRange>
+        <ResultYAxisRange>90 dB</ResultYAxisRange>
+        <RoomProcessorYAxisRange>90 dB</RoomProcessorYAxisRange>
+        <PhaseYAxisRange>90 dB</PhaseYAxisRange>
+        <IfftYAxisRange></IfftYAxisRange>
+        <ResultYAxisResolution>10</ResultYAxisResolution>
+        <RoomProcessorYAxisResolution>10</RoomProcessorYAxisResolution>
+        <PhaseYAxisResolution>60</PhaseYAxisResolution>
+        <IfftYAxisResolution>1</IfftYAxisResolution>
+        <ResultIfftTime>140 ms</ResultIfftTime>
+        <RoomProcessorIfftTime>140 ms</RoomProcessorIfftTime>
+        <PhaseIfftTime>140 ms</PhaseIfftTime>
+        <IfftTime>140 ms</IfftTime>
+        <TextBoxIfftAutoDelay></TextBoxIfftAutoDelay>
+        <SelectedProcessor>GALAXY 816 1</SelectedProcessor>
+        <SelectedChannel>Output Channel 1</SelectedChannel>
+        <SelectedMicroPhone></SelectedMicroPhone>
+        <WidgetResultMaxAmp>90</WidgetResultMaxAmp>
+        <WidgetResultMaxVal>90</WidgetResultMaxVal>
+        <WidgetResultMinVal>0</WidgetResultMinVal>
+        <WidgetRoomProcResultMaxAmp>90</WidgetRoomProcResultMaxAmp>
+        <WidgetRoomProcResultMaxVal>90</WidgetRoomProcResultMaxVal>
+        <WidgetRoomProcResultMinVal>0</WidgetRoomProcResultMinVal>
+        <WidgetPhaseResultMaxAmp>90</WidgetPhaseResultMaxAmp>
+        <WidgetPhaseResultMaxVal>90</WidgetPhaseResultMaxVal>
+        <WidgetPhaseResultMinVal>0</WidgetPhaseResultMinVal>
+        <WidgetImpulseResultMaxAmp>90</WidgetImpulseResultMaxAmp>
+        <WidgetImpulseResultMaxVal>90</WidgetImpulseResultMaxVal>
+        <WidgetImpulseResultMinVal>0</WidgetImpulseResultMinVal>
+        <WidgetResultRoomMaxAmp>90</WidgetResultRoomMaxAmp>
+        <WidgetResultRoomMaxVal>90</WidgetResultRoomMaxVal>
+        <WidgetResultRoomMinVal>0</WidgetResultRoomMinVal>
+        <WidgetRoomProcRoomMaxAmp>90</WidgetRoomProcRoomMaxAmp>
+        <WidgetRoomProcRoomMaxVal>90</WidgetRoomProcRoomMaxVal>
+        <WidgetRoomProcRoomMinVal>0</WidgetRoomProcRoomMinVal>
+        <WidgetPhaseRoomMaxAmp>90</WidgetPhaseRoomMaxAmp>
+        <WidgetPhaseRoomMaxVal>90</WidgetPhaseRoomMaxVal>
+        <WidgetPhaseRoomMinVal>0</WidgetPhaseRoomMinVal>
+        <WidgetImpulseRoomMaxAmp>90</WidgetImpulseRoomMaxAmp>
+        <WidgetImpulseRoomMaxVal>90</WidgetImpulseRoomMaxVal>
+        <WidgetImpulseRoomMinVal>0</WidgetImpulseRoomMinVal>
+    </Ifft>
+    <Headroom>
+        <ShowRMSSpectrum>true</ShowRMSSpectrum>
+        <ShowRMSSpectrumMax>false</ShowRMSSpectrumMax>
+        <ShowPeakSpectrum>true</ShowPeakSpectrum>
+        <ShowPeakSpectrumMax>false</ShowPeakSpectrumMax>
+        <CompensateGain>false</CompensateGain>
+        <selectedNoise>Signal: Pink Noise - dB(V)</selectedNoise>
+        <SignalLevel>0</SignalLevel>
+    </Headroom>
+    <zoom>false</zoom>
+    <linkAll>false</linkAll>
+    <pan>false</pan>
+</MeasurementViewer>
