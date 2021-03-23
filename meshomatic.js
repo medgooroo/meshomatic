@@ -375,20 +375,12 @@ window.onload = (event) => {
         if (fType == "txt") writeSoundVision(mesh);
         if (fType == "dae") writeCollada(mesh);
         if (fType == "bprint") writeBlueprint(mesh);
-        if (fType == "mappDef") writeMapp(mesh);
-        if (fType == "mappUpload") getUserMapp();
+        if (fType == "mappDef") writeMapp(mesh, 0);
+        if (fType == "mappUpload") writeMapp(mesh, 1);
         reset();
     }
 
-    async function getUserMapp() { /// this doesn't work yet.
-        var file = document.querySelector('input[type=file]').files[0];
-        const reader = new FileReader();
-        reader.onload = function (e){
-            // get a user file and then..
-            writeMapp(mesh, e);
-        }
-        reader.readAsDataURL(file);
-    }
+ 
 
 
     async function getRegion(tLat, tLong, zoom, api) { // gets the tiles immediately east,south and south east

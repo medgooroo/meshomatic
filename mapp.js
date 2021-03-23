@@ -21,15 +21,12 @@ function indexFromName(obj, value) {
     });
 }
 
-async function getDefaultFiles(userMapp) {
-    var zip;
-    if (userMapp === undefined) {
-    let data = await JSZipUtils.getBinaryContent('mapp/default.mapp');
-    zip = await JSZip.loadAsync(data);
-    }
-    else {
-        zip = await JSZipUtils.loadAsync(userMapp);
-    }
+async function getDefaultFiles(url) {
+
+    let data = await JSZipUtils.getBinaryContent(url);
+    let zip = await JSZip.loadAsync(data);
+    // zip = await JSZipUtils.loadAsync(userMapp);
+
     var fileList = [];
     zip.forEach(function (path, entry) {
         fileList.push(entry.name);
@@ -47,35 +44,99 @@ async function getDefaultFiles(userMapp) {
     return (filesAndXML);
 }
 
+async function getUserFiles() {
+    var fileSelector = document.createElement('input');
+    fileSelector.id = 'userFileInput';
+    fileSelector.setAttribute('type', 'file');
+    fileSelector.setAttribute('display', 'none');
+    var popupClosed = new Promise(function (resolve, reject) {
+        fileSelector.addEventListener('change', async (event) => {
+            resolve(event.target.files[0]);
+        })
+    });
+
+    fileSelector.click();
+    let file = await popupClosed;
+    let zip = (await JSZip.loadAsync(file));
+    var fileList = [];
+    zip.forEach(function (path, entry) {
+        fileList.push(entry.name);
+    });
+    // the goggles... they do nothing?
+    let fileData = await Promise.all(fileList.map(async fileName => await unzipFile(fileName, zip)));
+    filesAndXML = [];
+    fileList.forEach(function (val, index) {
+        var aFile = {
+            name: fileList[index],
+            data: fileData[index]
+        };
+        filesAndXML.push(aFile);
+    });
+    return (filesAndXML);
+}
+
+
 async function writeMapp(mesh, userMapp, listenHeight = 0) {
-    let mappFiles = await getDefaultFiles(userMapp); // wait until the promise resolves (*)
-    // or mappFiles = user Uploaded files
-    //console.log(mappFiles);
-    //////////////
-    var fileObj = fileObjFromName(mappFiles, "loudspeaker.xml");
-    var parser = new DOMParser();
-    var xmlDoc = parser.parseFromString(fileObj.data, "text/xml"); // read the xml text
-    var el = xmlDoc.createElement("testEl");
-    xmlDoc.getElementsByTagName("Loudspeakers")[0].appendChild(el);
-    fileObj.data = new XMLSerializer().serializeToString(xmlDoc); // write the xml back to text
+    var userMapp;
+    if (userMapp == 0) {
+        mappFiles = await getDefaultFiles("mapp/default.mapp"); // wait until the promise resolves (*)
+    } else {
+        mappFiles = await getUserFiles();
+    }
+
+
+    var bounds = getBoundingBox(mesh);
+    // //////////////
+    // //  get speaker bounds
+    // var speakerFile = fileObjFromName(mappFiles, "loudspeaker.xml");
+    // parser = new DOMParser();
+    // var speakerFileXML = parser.parseFromString(speakerFile.data, "text/xml"); // read the xml text
+    // var xtags, ytags, ztags;
+    // const xvals = new Array();
+    // const yvals = new Array();
+    // const zvals = new Array();
+    // xtags = Array.from(speakerFileXML.getElementsByTagName("X"));
+    // ytags = Array.from(speakerFileXML.getElementsByTagName("Y"));
+    // ztags = Array.from(speakerFileXML.getElementsByTagName("Z"));
+    // xtags.forEach(element => { xvals.push(element.textContent) });
+    // ytags.forEach(element => { yvals.push(element.textContent) });
+    // ztags.forEach(element => { zvals.push(element.textContent) });
+    // // update bounds 
+    // if (bounds.xMax < Math.max(...xvals)) { bounds.xMax = Math.max(...xvals) };
+    // if (bounds.yMax < Math.max(...yvals)) { bounds.yMax = Math.max(...yvals) };
+    // if (bounds.zMax < Math.max(...zvals)) { bounds.zMax = Math.max(...zvals) };
+    // if (bounds.xMin > Math.min(...xvals)) { bounds.xMin = Math.min(...xvals) };
+    // if (bounds.yMin > Math.min(...yvals)) { bounds.yMin = Math.min(...yvals) };
+    // if (bounds.zMin > Math.min(...zvals)) { bounds.zMin = Math.min(...zvals) };
+
     //////////////
     // Update project.xml
-    var bounds = getBoundingBox(mesh);
-
     var projectFile = fileObjFromName(mappFiles, "project.xml");
     parser = new DOMParser();
     var projectFileXML = parser.parseFromString(projectFile.data, "text/xml");
     // update Bounds. Need bonus +/-2 for mapp3ds meshing to not get sad.
+    if (projectFileXML.getElementsByTagName("xMin")[0].textContent > bounds.xMin) {
+        projectFileXML.getElementsByTagName("xMin")[0].textContent = bounds.xMin - 2
+    }
+    if (projectFileXML.getElementsByTagName("xMax")[0].textContent < bounds.xMax) {
+        projectFileXML.getElementsByTagName("xMax")[0].textContent = bounds.xMax + 2
+    }
+    if (projectFileXML.getElementsByTagName("yMin")[0].textContent > bounds.yMin) {
+        projectFileXML.getElementsByTagName("yMin")[0].textContent = bounds.yMin - 2
+    }
+    if (projectFileXML.getElementsByTagName("yMax")[0].textContent < bounds.yMax) {
+        projectFileXML.getElementsByTagName("yMax")[0].textContent = bounds.yMax + 2
+    }
+    if (projectFileXML.getElementsByTagName("zMin")[0].textContent > bounds.zMin) {
+        projectFileXML.getElementsByTagName("zMin")[0].textContent = bounds.zMin - 2
+    }
+    if (projectFileXML.getElementsByTagName("zMax")[0].textContent < bounds.zMax) {
+        projectFileXML.getElementsByTagName("zMax")[0].textContent = bounds.zMax + 2
+    }
+    projectFileXML.getElementsByTagName("distanceUnit")[0].textContent = "Meters";
 
-    projectFileXML.getElementsByTagName("xMin")[0].textContent = bounds.xMin - 2;
-    projectFileXML.getElementsByTagName("xMax")[0].textContent = bounds.xMax + 2;
-    projectFileXML.getElementsByTagName("yMin")[0].textContent = bounds.yMin - 2;
-    projectFileXML.getElementsByTagName("yMax")[0].textContent = bounds.yMax + 2;
-    projectFileXML.getElementsByTagName("zMin")[0].textContent = bounds.zMin - 2;
-    projectFileXML.getElementsByTagName("zMax")[0].textContent = bounds.zMax + 2;
-    
     // default to a lower resolution
-    projectFileXML.getElementsByTagName("sizeOfTriangle")[0].textContent = "1.6"; 
+    projectFileXML.getElementsByTagName("sizeOfTriangle")[0].textContent = "1.6";
 
     // create a new layer
     const layerElements = {
@@ -94,11 +155,11 @@ async function writeMapp(mesh, userMapp, listenHeight = 0) {
         colorBlueInactive: "0.2",
         colorAlphaInactive: "1"
     }
-    var newLayer = xmlDoc.createElement("layer");
+    var newLayer = projectFileXML.createElement("layer");
     projectFileXML.getElementsByTagName("layers")[0].appendChild(newLayer);
 
     for (const [key, value] of Object.entries(layerElements)) {
-        var el = xmlDoc.createElement(key);
+        var el = projectFileXML.createElement(key);
         el.textContent = value;
         newLayer.appendChild(el);
     }

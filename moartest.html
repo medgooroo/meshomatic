@@ -1,0 +1,42 @@
+<html>
+   
+    <script src="https://unpkg.com/jszip/dist/jszip.min.js"></script>
+    <script src="https://unpkg.com/jszip-utils/dist/jszip-utils.min.js"></script>
+<script src="martini.js"></script>
+<script src="export.js"></script>
+<script src="drawImg.js"></script>
+<script src="mapp.js"></script>
+
+<body>
+    <script>
+        async function doStuff() {
+        var parser = new DOMParser();
+
+        let mappFiles = await getDefaultFiles("mapp/test.mapp");
+        var speakerFile = fileObjFromName(mappFiles, "loudspeaker.xml");        
+        var speakerFileXML = parser.parseFromString(speakerFile.data, "text/xml"); // read the xml text
+        var xtags, ytags, ztags;
+        const xvals = new Array();
+        const yvals = new Array();
+        const zvals = new Array();
+        xtags = Array.from(speakerFileXML.getElementsByTagName("X"));
+        ytags = Array.from(speakerFileXML.getElementsByTagName("Y"));
+        ztags = Array.from(speakerFileXML.getElementsByTagName("Z"));
+        xtags.forEach(element => { xvals.push(element.textContent) });
+        ytags.forEach(element => { yvals.push(element.textContent) });
+        ztags.forEach(element => { zvals.push(element.textContent) });
+
+        console.log("speaker xmax: " + Math.max(...xvals));
+        console.log("speaker ymax: " + Math.max(...yvals));
+        console.log("speaker zmax: " + Math.max(...zvals));
+
+        var stfu = [0 , 3, 5, 3];
+        console.log(Math.max(...stfu));
+
+        }
+        doStuff();
+    </script>
+
+</body>
+
+</html>
