@@ -197,15 +197,15 @@ function writeArrayCalc(mesh) {
 
 
 function writeCollada(mesh) {
-    for (var i = 0; i < mesh.vertices.length; i = i + 3) {
-        //  switch coord system
-        var x = mesh.vertices[i];
-        var y = mesh.vertices[i+1];
-        var z = mesh.vertices[i+2];
-        mesh.vertices[i] =  z;
-        mesh.vertices[i + 1] = x;
-        mesh.vertices[i + 2] =  y;
-    }
+    // for (var i = 0; i < mesh.vertices.length; i = i + 3) {
+    //     //  switch coord system
+    //     var x = mesh.vertices[i];
+    //     var y = mesh.vertices[i+1];
+    //     var z = mesh.vertices[i+2];
+    //     mesh.vertices[i] =  z;
+    //     mesh.vertices[i + 1] = x;
+    //     mesh.vertices[i + 2] =  y;
+    // }
     // https://www.codeproject.com/Articles/625701/COLLADA-TinyXML-and-OpenGL
     var doc = document.implementation.createDocument("", "", null);
     var main = doc.createElement("COLLADA");

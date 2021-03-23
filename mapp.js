@@ -5,20 +5,162 @@ function genGUID() {
     });
 }
 
+function unzipFile(fileName, zip) {
+    return new Promise(async (resolve, reject) => {
+        resolve(zip.file(fileName).async("string"));
+    })
+}
+function fileObjFromName(obj, value) {
+    return obj.find(function (v) {
+        return v["name"] === value
+    });
+}
+function indexFromName(obj, value) {
+    return obj.findIndex(function (element) {
+        return element.name == value;
+    });
+}
 
-function writeMappXML(mesh, listenHeight = 0) {
+async function getDefaultFiles(userMapp) {
+    var zip;
+    if (userMapp === undefined) {
+    let data = await JSZipUtils.getBinaryContent('mapp/default.mapp');
+    zip = await JSZip.loadAsync(data);
+    }
+    else {
+        zip = await JSZipUtils.loadAsync(userMapp);
+    }
+    var fileList = [];
+    zip.forEach(function (path, entry) {
+        fileList.push(entry.name);
+    });
+    // the goggles... they do nothing?
+    let fileData = await Promise.all(fileList.map(async fileName => await unzipFile(fileName, zip)));
+    filesAndXML = [];
+    fileList.forEach(function (val, index) {
+        var aFile = {
+            name: fileList[index],
+            data: fileData[index]
+        };
+        filesAndXML.push(aFile);
+    });
+    return (filesAndXML);
+}
+
+async function writeMapp(mesh, userMapp, listenHeight = 0) {
+    let mappFiles = await getDefaultFiles(userMapp); // wait until the promise resolves (*)
+    // or mappFiles = user Uploaded files
+    //console.log(mappFiles);
+    //////////////
+    var fileObj = fileObjFromName(mappFiles, "loudspeaker.xml");
+    var parser = new DOMParser();
+    var xmlDoc = parser.parseFromString(fileObj.data, "text/xml"); // read the xml text
+    var el = xmlDoc.createElement("testEl");
+    xmlDoc.getElementsByTagName("Loudspeakers")[0].appendChild(el);
+    fileObj.data = new XMLSerializer().serializeToString(xmlDoc); // write the xml back to text
+    //////////////
+    // Update project.xml
+    var bounds = getBoundingBox(mesh);
+
+    var projectFile = fileObjFromName(mappFiles, "project.xml");
+    parser = new DOMParser();
+    var projectFileXML = parser.parseFromString(projectFile.data, "text/xml");
+    // update Bounds. Need bonus +/-2 for mapp3ds meshing to not get sad.
+
+    projectFileXML.getElementsByTagName("xMin")[0].textContent = bounds.xMin - 2;
+    projectFileXML.getElementsByTagName("xMax")[0].textContent = bounds.xMax + 2;
+    projectFileXML.getElementsByTagName("yMin")[0].textContent = bounds.yMin - 2;
+    projectFileXML.getElementsByTagName("yMax")[0].textContent = bounds.yMax + 2;
+    projectFileXML.getElementsByTagName("zMin")[0].textContent = bounds.zMin - 2;
+    projectFileXML.getElementsByTagName("zMax")[0].textContent = bounds.zMax + 2;
+    
+    // default to a lower resolution
+    projectFileXML.getElementsByTagName("sizeOfTriangle")[0].textContent = "1.6"; 
+
+    // create a new layer
+    const layerElements = {
+        layergUID: "{" + genGUID() + "}",
+        layerName: "groundMesh",
+        visible: "true",
+        locked: "true",
+        colorRed: "0",
+        colorGreen: "1",
+        colorBlue: "0",
+        colorAlpha: "1",
+        colorIndex: "1",
+        layerIndex: "1", // hmmm
+        colorRedInactive: "0.2",
+        colorGreenInactive: "0.2",
+        colorBlueInactive: "0.2",
+        colorAlphaInactive: "1"
+    }
+    var newLayer = xmlDoc.createElement("layer");
+    projectFileXML.getElementsByTagName("layers")[0].appendChild(newLayer);
+
+    for (const [key, value] of Object.entries(layerElements)) {
+        var el = xmlDoc.createElement(key);
+        el.textContent = value;
+        newLayer.appendChild(el);
+    }
+
+    mappFiles[indexFromName(mappFiles, "project.xml")].data = new XMLSerializer().serializeToString(projectFileXML); // write the xml back to text
+
+
+    // add the geometry to the file list
+    var geomFile = {
+        name: "geometry.xml",
+        data: genGeom(mesh, listenHeight)
+    };
+    mappFiles.push(geomFile);
+
+    // zip it all back up and save it.
+    var resultZip = new JSZip();
+    mappFiles.forEach(function (val, index) { // zip em back up
+        var blob = new Blob([mappFiles[index].data], {
+            type: "application/xml;charset=utf-8;"
+        });
+        resultZip.file(mappFiles[index].name, blob)
+    });
+    var zipFile = await resultZip.generateAsync({ type: "blob" })
+    saveAs(zipFile, "mesh.mapp"); // will be mapp. zip for debug
+}
+
+
+function getBoundingBox(mesh) {
+    var res = {
+        xMin: 0,
+        xMax: 0,
+        yMin: 0,
+        yMax: 0,
+        zMin: 0,
+        zMax: 0
+    }
+    for (var i = 0; i < mesh.vertices.length; i = i + 3) {
+        var x = mesh.vertices[i];
+        var y = mesh.vertices[i + 1];
+        var z = mesh.vertices[i + 2];
+        if (x > res.xMax) res.xMax = Math.ceil(x);
+        if (x < res.xMin) res.xMin = Math.floor(x);
+        if (y > res.yMax) res.yMax = Math.ceil(y);
+        if (y < res.yMin) res.yMin = Math.floor(y);
+        if (z > res.zMax) res.zMax = Math.ceil(z);
+        if (z < res.zMin) res.zMin = Math.floor(z);
+    }
+    return res;
+}
+
+function genGeom(mesh, listenHeight = 0) { // returns xml document  - TODO make this add to an existing file ?
     var doc = document.implementation.createDocument("", "", null);
     var main = doc.createElement("Geometries");
 
     var triCount = 0;
-
     for (var i = 0; i < mesh.triangles.length; i = i + 3) {
         var geom = doc.createElement("Geometry");
         main.appendChild(geom);
 
         // This took me way too long to figure out.
         // X, Y, Z here need to be the midpoint of the bounding box of the tri.
-        // PX, PY, PZ seem to be the user defined point, any vertex or the aforementioned mid point. Doesn't seem to matter to us.
+        // PX, PY, PZ seem to be the user defined point. i.e. any vertex or the aforementioned mid point. Doesn't seem to matter to us.
         // Points within an element e.g. FreeDrawPoints can be referenced to the real origin, however it seems internally the midpoint is calculated,
         // the points are rereferenced to that and then offset by the XYZ mentioned before. 
         // accordingly we'll just use the absolute coords, but set the midpoint coords as well.
@@ -43,7 +185,8 @@ function writeMappXML(mesh, listenHeight = 0) {
         const defaultElements = {
             gUID: "{" + genGUID() + "}",
             objectName: "MeshTri " + triCount,
-            layerName: "Layer 0",
+            // layerName: "Layer 0",
+            layerName: "groundMesh",
             isOffset: 'false',
             isGrouped: 'false',
             isMultiLevelVA: 'false',
@@ -111,36 +254,7 @@ function writeMappXML(mesh, listenHeight = 0) {
         geom.appendChild(el);
         triCount++;
     }
+    return (new XMLSerializer().serializeToString(main)); // write the xml back to text
 
-    var xmlText = new XMLSerializer().serializeToString(main);
-    xmlText = '<?xml version="1.0" encoding="UTF-8"?>' + xmlText;
-    var blob = new Blob([xmlText], {
-        type: "application/xml;charset=utf-8;"
-    });
-
-    var zip = new JSZip();
-    zip.file("geometry.xml", blob);
-
-    zip.generateAsync({ type: "blob" })
-        .then(function (content) {
-            // see FileSaver.js
-            saveAs(content, "mesh.mapp");
-        });
-
-
-    const blobURL = window.URL.createObjectURL(blob);
 }
 
-
-function xmlTest() {
-    console.log("xmlTest");
-    var xhttp = new XMLHttpRequest();
-    xhttp.onreadystatechange = function () {
-        if (this.readyState == 4 && this.status == 200) {
-            var data = xhttp.responseXML;
-            console.log("got loudpeakers?");
-        }
-    };
-    xhttp.open("GET", "mapp/loudspeaker.xml", true);
-    xhttp.send();
-}

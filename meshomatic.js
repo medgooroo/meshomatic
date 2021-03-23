@@ -1,5 +1,4 @@
 window.onload = (event) => {
-    xmlTest();
     document.getElementById("downloadMesh").onclick = function () { run() };
 
     var layerOsm = new L.TileLayer(
@@ -243,7 +242,7 @@ window.onload = (event) => {
         if (res == "vl") err = 0.75;
         if (res == "l") err = 0.5;
         if (res == "m") err = 0.2;
-    
+
         // do nowt for high res
 
         const tLatLng = latlng2tile(bounds.getNorthWest(), meshZoom);
@@ -376,9 +375,21 @@ window.onload = (event) => {
         if (fType == "txt") writeSoundVision(mesh);
         if (fType == "dae") writeCollada(mesh);
         if (fType == "bprint") writeBlueprint(mesh);
-        if (fType == "mappXML") writeMappXML(mesh);
+        if (fType == "mappDef") writeMapp(mesh);
+        if (fType == "mappUpload") getUserMapp();
         reset();
     }
+
+    async function getUserMapp() { /// this doesn't work yet.
+        var file = document.querySelector('input[type=file]').files[0];
+        const reader = new FileReader();
+        reader.onload = function (e){
+            // get a user file and then..
+            writeMapp(mesh, e);
+        }
+        reader.readAsDataURL(file);
+    }
+
 
     async function getRegion(tLat, tLong, zoom, api) { // gets the tiles immediately east,south and south east
         const canvas = document.createElement("canvas");

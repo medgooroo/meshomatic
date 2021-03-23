@@ -28,6 +28,7 @@
     <script src="https://unpkg.com/leaflet-draw//dist/leaflet.draw.js"></script>
     
     <script src="https://unpkg.com/jszip/dist/jszip.min.js"></script>
+    <script src="https://unpkg.com/jszip-utils/dist/jszip-utils.min.js"></script>
 
     <script src="martini.js"></script>
     <script src="export.js"></script>
@@ -67,11 +68,13 @@
                         <option value="txt">.txt for SoundVision</option>
                         <option value="dae">.dae collada file</option>
                         <option value="bprint">.xar Blueprint floor file</option>
-                        <option value="mappXML">MAPP3D geometry.xml</option>
+                        <option value="mappDef">MAPP3D With defaults</option>
+                     
                     </select>
                 </li>
                 <li>
                     <input type="button" value="Download" id="downloadMesh" />
+                    
                 </li>
             </ul>
         </form>
