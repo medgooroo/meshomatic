@@ -112,18 +112,6 @@ function writeMappXML(mesh, listenHeight = 0) {
         triCount++;
     }
 
-    var xhttp = new XMLHttpRequest();
-    xhttp.onreadystatechange = function () {
-        if (this.readyState == 4 && this.status == 200) {
-            var data = xhttp.responseXML;
-            console.log("got loudpeakers?");
-        }
-    };
-    xhttp.open("GET", "mapp/loudspeakers.xml", true);
-    xhttp.send();
-
-
-
     var xmlText = new XMLSerializer().serializeToString(main);
     xmlText = '<?xml version="1.0" encoding="UTF-8"?>' + xmlText;
     var blob = new Blob([xmlText], {
@@ -141,4 +129,18 @@ function writeMappXML(mesh, listenHeight = 0) {
 
 
     const blobURL = window.URL.createObjectURL(blob);
+}
+
+
+function xmlTest() {
+    console.log("xmlTest");
+    var xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function () {
+        if (this.readyState == 4 && this.status == 200) {
+            var data = xhttp.responseXML;
+            console.log("got loudpeakers?");
+        }
+    };
+    xhttp.open("GET", "mapp/loudspeaker.xml", true);
+    xhttp.send();
 }

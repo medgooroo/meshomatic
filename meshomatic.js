@@ -1,4 +1,5 @@
 window.onload = (event) => {
+    xmlTest();
     document.getElementById("downloadMesh").onclick = function () { run() };
 
     var layerOsm = new L.TileLayer(
