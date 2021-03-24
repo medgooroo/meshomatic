@@ -131,6 +131,7 @@ window.onload = (event) => {
                     L.ScaleAction,
                     L.RotateAction,
                     L.DragAction,
+                    L.DistortAction,
                     L.OpacityAction,
                     L.DeleteAction,
                     L.LockAction
@@ -377,6 +378,7 @@ window.onload = (event) => {
         if (fType == "bprint") writeBlueprint(mesh);
         if (fType == "mappDef") writeMapp(mesh, 0);
         if (fType == "mappUpload") writeMapp(mesh, 1);
+        if (fType == "dxf") writeDXF(mesh);
         reset();
     }
 

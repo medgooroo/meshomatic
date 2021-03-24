@@ -194,8 +194,6 @@ function writeArrayCalc(mesh) {
 
 }
 
-
-
 function writeCollada(mesh) {
     // for (var i = 0; i < mesh.vertices.length; i = i + 3) {
     //     //  switch coord system
