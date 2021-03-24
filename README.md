@@ -7,7 +7,7 @@ L'Acoustic Soundvision,
 D&B ArrayCalc,
 Outline OpenArray,
 Adamson Blueprint AV,
-MAPP3D
+Meyer MAPP3D
 
 wavefront .obj and collada .dae exports for import into sketchup etc. 
 
