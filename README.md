@@ -6,7 +6,8 @@ Produces output meshes for:
 L'Acoustic Soundvision, 
 D&B ArrayCalc,
 Outline OpenArray,
-Adamson Blueprint AV
+Adamson Blueprint AV,
+Meyer MAPP3D
 
 wavefront .obj and collada .dae exports for import into sketchup etc. 
 
