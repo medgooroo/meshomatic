@@ -237,12 +237,14 @@ window.onload = (event) => {
         var meshZoom = Math.floor(Math.abs(Math.log2(distance / metresAtZeroZoom)));  // zoom level to fit image well
         if (meshZoom > 15) meshZoom = 15;  // clamp to maximum resolution of data
         // find the first tile that contains the image 
-        var err = 0.1;
+        var outputMeshRes = 10;
         e = document.getElementById("res");
         res = e.options[e.selectedIndex].value;
-        if (res == "vl") err = 0.75;
-        if (res == "l") err = 0.5;
-        if (res == "m") err = 0.2;
+        if (res == "1") outputMeshRes = 1;
+        if (res == "5") outputMeshRes = 5;
+        if (res == "10") outputMeshRes = 10;
+        if (res == "25") outputMeshRes = 25;
+
 
         // do nowt for high res
 
@@ -309,10 +311,13 @@ window.onload = (event) => {
         }
         //         console.log("pointsToMeshReferenced: " + pointsToMeshReferenced);
 
-        //
-        const martini = new Martini(paddedSize);
-        const tile = martini.createTile(paddedElev);
-        const mesh = tile.getBoundedMesh(err, pointsToMeshReferenced);
+        // //
+        // const martini = new Martini(paddedSize);
+        // const tile = martini.createTile(paddedElev);
+        // const mesh = tile.getBoundedMesh(err, pointsToMeshReferenced);
+
+        const jini = new Jini(paddedElev);
+        const mesh = jini.getBoundedMesh(pointsToMeshReferenced, outputMeshRes);
 
         // draw a mesh
         // for (var i = 0; i < mesh.triangles.length; i = i + 3) {
