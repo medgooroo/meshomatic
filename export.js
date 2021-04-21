@@ -12,9 +12,10 @@ function writeSoundVision(mesh) {
     var triCount = 0;
     for (var i = 0; i < mesh.triangles.length; i = i + 3) {
         objText += '\n"Label","Layer0 ' + "triCount01" + '"\n';
+        // sound vision likes em wound this way.
         objText += mesh.vertices[mesh.triangles[i] * 3] + "," + mesh.vertices[mesh.triangles[i] * 3 + 1] + "," + mesh.vertices[mesh.triangles[i] * 3 + 2] + "\n";
+        objText += mesh.vertices[mesh.triangles[i + 2] * 3] + "," + mesh.vertices[mesh.triangles[i + 2] * 3 + 1] + "," + mesh.vertices[mesh.triangles[i + 2] * 3 + 2] + "\n"; 
         objText += mesh.vertices[mesh.triangles[i + 1] * 3] + "," + mesh.vertices[mesh.triangles[i + 1] * 3 + 1] + "," + mesh.vertices[mesh.triangles[i + 1] * 3 + 2] + "\n";
-        objText += mesh.vertices[mesh.triangles[i + 2] * 3] + "," + mesh.vertices[mesh.triangles[i + 2] * 3 + 1] + "," + mesh.vertices[mesh.triangles[i + 2] * 3 + 2] + "\n";
         objText += '";"';
         triCount++;
     }
