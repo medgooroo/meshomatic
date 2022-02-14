@@ -10,6 +10,8 @@ Adamson Blueprint AV,
 Meyer MAPP3D
 
 wavefront .obj and collada .dae exports for import into sketchup etc. 
+See 
+https://invrsd.wordpress.com/2021/03/30/more-meshing-stuff/
 
 
 Uses mapbox elevation data.
