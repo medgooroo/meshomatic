@@ -149,18 +149,18 @@ function writeArrayCalc(mesh) {
         el.setAttribute("z", "1");
         roomObject.appendChild(el);
         el = doc.createElement("P1");
-        el.setAttribute("y", mesh.vertices[mesh.triangles[i] * 3]);
-        el.setAttribute("x", -mesh.vertices[mesh.triangles[i] * 3 + 1]);
+        el.setAttribute("y", -mesh.vertices[mesh.triangles[i] * 3]);
+        el.setAttribute("x", mesh.vertices[mesh.triangles[i] * 3 + 1]);
         el.setAttribute("z", mesh.vertices[mesh.triangles[i] * 3 + 2]);
         roomObject.appendChild(el);
         el = doc.createElement("P2");
-        el.setAttribute("y", mesh.vertices[mesh.triangles[i + 1] * 3]);
-        el.setAttribute("x", -mesh.vertices[mesh.triangles[i + 1] * 3 + 1]);
+        el.setAttribute("y", -mesh.vertices[mesh.triangles[i + 1] * 3]);
+        el.setAttribute("x", mesh.vertices[mesh.triangles[i + 1] * 3 + 1]);
         el.setAttribute("z", mesh.vertices[mesh.triangles[i + 1] * 3 + 2]);
         roomObject.appendChild(el);
         el = doc.createElement("P3");
-        el.setAttribute("y", mesh.vertices[mesh.triangles[i + 2] * 3]);
-        el.setAttribute("x", -mesh.vertices[mesh.triangles[i + 2] * 3 + 1]);
+        el.setAttribute("y", -mesh.vertices[mesh.triangles[i + 2] * 3]);
+        el.setAttribute("x", mesh.vertices[mesh.triangles[i + 2] * 3 + 1]);
         el.setAttribute("z", mesh.vertices[mesh.triangles[i + 2] * 3 + 2]);
         roomObject.appendChild(el);
         /////////////////////////////////
