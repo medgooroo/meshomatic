@@ -1,4 +1,7 @@
-function writeDXF(mesh) { // not working yet
+import { saveAs } from './export.js';
+import { getBoundingBox } from './mapp.js';
+
+export function writeDXF(mesh) {
     // generic header, extents in "paper space" etc, set up 2 layers
     var bounds = getBoundingBox(mesh);
     var objText = `
@@ -23,14 +26,14 @@ $INSBASE
 9
 $EXTMIN
 `;
-objText += "10\n" + bounds.xMin + "\n";
-objText += "20\n" + bounds.yMin + "\n";
-objText += "30\n" + bounds.zMin + "\n";
-objText += "9\n $EXTMAX\n";
-objText += "10\n" + bounds.xMax + "\n";
-objText += "20\n" + bounds.yMax + "\n";
-objText += "30\n" + bounds.zMax + "\n";
-objText += `0
+    objText += "10\n" + bounds.xMin + "\n";
+    objText += "20\n" + bounds.yMin + "\n";
+    objText += "30\n" + bounds.zMin + "\n";
+    objText += "9\n $EXTMAX\n";
+    objText += "10\n" + bounds.xMax + "\n";
+    objText += "20\n" + bounds.yMax + "\n";
+    objText += "30\n" + bounds.zMax + "\n";
+    objText += `0
 ENDSEC
 0
 SECTION
@@ -114,7 +117,7 @@ LINE
 62
 4`;
     for (var i = 0; i < mesh.triangles.length; i = i + 3) {
-        //  TODO better plan - make a list of all the lines. Remove any duplicates.
+        // TODO make a list of all the lines. Remove any duplicates.
 
         objText += lineHeader; // A -> B
         objText += "10\n" + mesh.vertices[mesh.triangles[i] * 3] + "\n";

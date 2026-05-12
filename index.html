@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meshomatic</title>
+</head>
+
+<body>
+    <div id="map" class="map"></div>
+    <div class="uiCol">
+        <form class="form-style-9">
+            <h1 class="title">Meshomatic</h1>
+            <ul>
+                <li>Find location on map.</li>
+                <li>Use img to load an image into the map, scale and rotate. (optional)</li>
+                <li>Select area to produce mesh for with polygon tool.</li>
+                <li>Use origin tool to reference the mesh to a point. e.g. stage front or landmark.</li>
+                <li>Choose options below and download mesh. (Then wait a moment)</li>
+                <li>Video example with Soundvision <a href="https://youtu.be/4JCupVU-daQ">Here</a></li>
+            </ul>
+
+            <ul>
+                <li>
+                    <label for="res">Resolution:</label>
+                    <select id="res" class="field-style">
+                        <option value="1">1M</option>
+                        <option value="5" selected>5M</option>
+                        <option value="10">10M</option>
+                        <option value="25">25M</option>
+                    </select>
+                </li>
+                <li>
+                    <label for="filetype">Filetype:</label>
+                    <select id="filetype" class="field-style">
+                        <option value="obj">.obj file</option>
+                        <option value="dbacv">.dbacv for ArrayCalc</option>
+                        <option value="txt">.txt for SoundVision</option>
+                        <option value="dae">.dae collada file</option>
+                        <option value="bprint">.xar Blueprint floor file</option>
+                        <option value="mappDef">MAPP3D create new file</option>
+                        <option value="mappUpload">MAPP3D replace geometry in your file</option>
+                    </select>
+                </li>
+                <li>
+                    <input type="button" value="Download" id="downloadMesh" />
+                </li>
+            </ul>
+        </form>
+        <h4>notes:</h4>
+        <div class="notes">MAPP seems to get particularly unhappy with detailed meshes.</div>
+        <br><Br>
+        If this is useful to you...
+        <script src='https://storage.ko-fi.com/cdn/scripts/overlay-widget.js'></script>
+        <script type='text/javascript' src='https://ko-fi.com/widgets/widget_2.js'></script>
+        <script type='text/javascript'>kofiwidget2.init('Buy me a coffee!', '#29abe0', 'D1D23XGW4'); kofiwidget2.draw();</script>
+    </div>
+
+    <canvas id="drawing" width="800" height="800"></canvas>
+
+    <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>

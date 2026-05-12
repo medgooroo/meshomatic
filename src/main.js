@@ -1,5 +1,45 @@
-window.onload = (event) => {
-    document.getElementById("downloadMesh").onclick = function () { run() };
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Some Leaflet plugins assume window.L. Pin a single instance for them
+// to extend so we don't end up with two copies of Leaflet floating around.
+window.L = L;
+
+import 'leaflet-draw';
+import 'leaflet-draw/dist/leaflet.draw.css';
+
+// leaflet-distortableimage's webpack output expects vendor.js to load before
+// the main bundle (the main bundle references chunks defined in vendor.js).
+import 'leaflet-distortableimage/dist/vendor.js';
+import 'leaflet-distortableimage';
+import 'leaflet-distortableimage/dist/vendor.css';
+import 'leaflet-distortableimage/dist/leaflet.distortableimage.css';
+
+import { GeoSearchControl, OpenStreetMapProvider } from 'leaflet-geosearch';
+import 'leaflet-geosearch/dist/geosearch.css';
+
+import earcut from 'earcut';
+
+import { Jini } from './jini.js';
+import {
+    writeObj,
+    writeArrayCalc,
+    writeSoundVision,
+    writeCollada,
+    writeBlueprint,
+} from './export.js';
+import { writeMapp } from './mapp.js';
+import { writeDXF } from './dxf.js';
+
+import '../style.css';
+
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
+if (!MAPBOX_TOKEN) {
+    console.warn('VITE_MAPBOX_TOKEN is not set — terrain fetches will fail. Set it in .env.');
+}
+
+window.onload = () => {
+    document.getElementById("downloadMesh").onclick = function () { run(); };
 
     var layerOsm = new L.TileLayer(
         'https://{s}.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
@@ -19,13 +59,11 @@ window.onload = (event) => {
     var map = L.map('map', {
         center: [50.813802269173955, -2.474659707933869],
         zoom: 10,
-        layers: [layerOsm, imgCollection, originCollection] // include overlays here
+        layers: [layerOsm, imgCollection, originCollection]
     });
-    /////////////////
 
-
-    const search = new GeoSearch.GeoSearchControl({
-        provider: new GeoSearch.OpenStreetMapProvider(),
+    const search = new GeoSearchControl({
+        provider: new OpenStreetMapProvider(),
     });
     map.addControl(search);
 
@@ -39,47 +77,39 @@ window.onload = (event) => {
             rectangle: false,
             circlemarker: false,
             polygon: {
-                allowIntersection: false, // Restricts shapes to simple polygons
+                allowIntersection: false,
                 drawError: {
-                    color: '#e1e100', // Color the shape will turn when intersects
-                    message: '<strong>Poly can\'t intersect itself</strong>', // Message that will show when intersect
+                    color: '#e1e100',
+                    message: '<strong>Poly can\'t intersect itself</strong>',
                 },
             },
         },
         edit: {
             featureGroup: drawnItems
         }
-
     });
 
     map.addControl(drawControl);
     map.on(L.Draw.Event.CREATED, function (e) {
-        var type = e.layerType,
-            layer = e.layer;
-        drawnItems.addLayer(layer);
+        drawnItems.addLayer(e.layer);
     });
-    ///////////
+
     var baseMaps = {
-        // "Terrain": layerTerrain,
         "OSM": layerOsm,
         "Satellite": layerGoogleSat,
     };
-    var overlayMaps = {
-        //"Elevation": elevLayer
-    };
+    var overlayMaps = {};
     L.control.layers(baseMaps, overlayMaps).addTo(map);
 
     L.control.scale({ maxWidth: 240, metric: true, imperial: false, position: 'bottomleft' }).addTo(map);
 
-    //////////////////////////////////////////////
     L.Control.manipControl = L.Control.extend({
         options: {
             position: 'topleft'
         },
 
-        onAdd: function (map) {
+        onAdd: function () {
             var container = L.DomUtil.create('div', 'leaflet-bar');
-            // manipButton.type = 'file';
 
             var loadImg = L.DomUtil.create('a', 'leaflet-control-loadImg', container);
             loadImg.title = "Load Image";
@@ -90,41 +120,31 @@ window.onload = (event) => {
             fSelect.type = "file";
             fSelect.hidden = true;
 
-            L.DomEvent.on(
-                fSelect,
-                'change',
-                function () {
-                    loadImageOverlay(this);
-                    fSelect.value = ''; // reset so we can load the same image twice
-                }
-            )
+            L.DomEvent.on(fSelect, 'change', function () {
+                loadImageOverlay(this);
+                fSelect.value = '';
+            });
             var setOrigin = L.DomUtil.create('a', 'leaflet-control-setOrigin', container);
             setOrigin.innerHTML = "Origin";
 
-            L.DomEvent.on(
-                setOrigin,
-                'click',
-                function () { setOriginImage() }
-            );
+            L.DomEvent.on(setOrigin, 'click', function () { setOriginImage(); });
             return container;
         },
 
-
-        onRemove: function (map) {
+        onRemove: function () {
             L.DomEvent.off();
         }
     });
 
-
     L.control.manipControl = function (opts) {
         return new L.Control.manipControl(opts);
-    }
+    };
     L.control.manipControl({ position: 'topleft' }).addTo(map);
 
     function loadImageOverlay() {
         var file = document.querySelector('input[type=file]').files[0];
         const reader = new FileReader();
-        reader.onload = L.Util.bind(function (e) {
+        reader.onload = L.Util.bind(function () {
             var img = L.distortableImageOverlay(reader.result, {
                 selected: true,
                 actions: [
@@ -143,9 +163,8 @@ window.onload = (event) => {
     }
 
     function setOriginImage() {
-        var origin = L.distortableImageOverlay("https://i.postimg.cc/XY4fCqYw/axes.png", {
-            // var origin = L.distortableImageOverlay("https://github.com/medgooroo/meshomatic/raw/main/axes.png", { // github serve this from somewhere else and CORS breaks 
-
+        // axes.png is now served from same origin (public/), so CORS is no longer in the way.
+        var origin = L.distortableImageOverlay(`${import.meta.env.BASE_URL}axes.png`, {
             actions: [
                 L.FreeRotateAction,
                 L.DeleteAction,
@@ -154,7 +173,6 @@ window.onload = (event) => {
         });
         originCollection.addLayer(origin);
         originCollection.setZIndex(700);
-
         originCollection.bringToFront();
     }
 
@@ -162,7 +180,7 @@ window.onload = (event) => {
         var b = document.getElementById("downloadMesh");
         b.onclick = function () { };
         b.setAttribute('value', "Processing...");
-        setTimeout(function () { dumpPoints() }, 50);
+        setTimeout(function () { dumpPoints(); }, 50);
     }
 
     async function reset() {
@@ -174,9 +192,8 @@ window.onload = (event) => {
     }
 
     async function dumpPoints() {
-
-        const imgs = imgCollection.getLayers(); // image
-        const layer = drawnItems.getLayers(); // polygons
+        const imgs = imgCollection.getLayers();
+        const layer = drawnItems.getLayers();
         const origin = originCollection.getLayers();
 
         if (origin.length < 1) {
@@ -186,32 +203,29 @@ window.onload = (event) => {
         }
         var b = document.getElementById("downloadMesh");
         b.setAttribute('value', "Processing...");
-        b.onclick = ''; // 
+        b.onclick = '';
 
-
-        var polyAsPoints = new Array();
+        var polyAsPoints = [];
         var shape;
         layer.forEach(function (curr) {
             if (curr instanceof L.Polygon) {
                 shape = curr.getLatLngs();
             }
         });
-        if (shape) { // is there a polygon?
-            // we're only interested in the first poly. make it into a format that earcut can understand.
+        if (shape) {
+            // we're only interested in the first poly. make it into a format earcut understands.
             for (var i = 0; i < shape[0].length; i++) {
-                var point = shape[0][i].lat;
-                polyAsPoints.push(point);
-                point = shape[0][i].lng;
-                polyAsPoints.push(point);
+                polyAsPoints.push(shape[0][i].lat);
+                polyAsPoints.push(shape[0][i].lng);
             }
-            var tris = earcut(polyAsPoints); // take those points and make a vert index for triangles.
-            const output = tris.map(i => shape[0][i]);   // remap the points into list of tris
-            genMesh(output); // just delay to let the dom update; set the label.
+            var tris = earcut(polyAsPoints);
+            const output = tris.map(i => shape[0][i]);
+            genMesh(output);
         }
         // fallback to just using the bounds of a loaded image.
         else if (imgs.length > 0) {
             const corners = imgs[0].getCorners();
-            var tris = [ // convert image to 2 tris
+            var tris = [
                 corners[0],
                 corners[1],
                 corners[2],
@@ -220,7 +234,6 @@ window.onload = (event) => {
                 corners[2]
             ];
             genMesh(tris);
-
         }
         else {
             alert("Define a polygon or image to create a mesh");
@@ -229,40 +242,31 @@ window.onload = (event) => {
     }
 
 
-    async function genMesh(pointsToMesh) { // takes tris that make up bounds in array of latlng 
-
+    async function genMesh(pointsToMesh) {
         const bounds = L.latLngBounds(pointsToMesh);
-        const distance = bounds.getNorthWest().distanceTo(bounds.getNorthEast()); // see how big the image is
+        const distance = bounds.getNorthWest().distanceTo(bounds.getNorthEast());
         const metresAtZeroZoom = 40075015.68; // tile size 256 * px/m at zoom 0
-        var meshZoom = Math.floor(Math.abs(Math.log2(distance / metresAtZeroZoom)));  // zoom level to fit image well
-        if (meshZoom > 15) meshZoom = 15;  // clamp to maximum resolution of data
-        // find the first tile that contains the image 
-        var outputMeshRes = 10;
-        e = document.getElementById("res");
-        res = e.options[e.selectedIndex].value;
-        if (res == "1") outputMeshRes = 1;
-        if (res == "5") outputMeshRes = 5;
-        if (res == "10") outputMeshRes = 10;
-        if (res == "25") outputMeshRes = 25;
+        var meshZoom = Math.floor(Math.abs(Math.log2(distance / metresAtZeroZoom)));
+        if (meshZoom > 15) meshZoom = 15; // clamp to data resolution
 
-
-        // do nowt for high res
+        var outputMeshRes = parseFloat(document.getElementById("res").value);
 
         const tLatLng = latlng2tile(bounds.getNorthWest(), meshZoom);
 
-        //const MAPBOX_KEY = "pk.eyJ1IjoibWVkZ29vcm9vIiwiYSI6ImNrbTZ1eTViaTBydmoycW42aDRjbm9ubWgifQ.GpEjpbJYDHzK4lXHo_Mu9A";
-        const MAPBOX_KEY = "pk.eyJ1IjoibWVkZ29vcm9vIiwiYSI6ImNrbTZ6N2dndjB0M2Eydm54bndleHJyM2QifQ.EJ7oCU3OavcIK4iNHNtcgA";
-        const elevImage = await getRegion(tLatLng.tLat, tLatLng.tLng, meshZoom, `https://api.mapbox.com/v4/mapbox.terrain-rgb/zoom/tLong/tLat.pngraw?access_token=${MAPBOX_KEY}`);
+        const elevImage = await getRegion(
+            tLatLng.tLat,
+            tLatLng.tLng,
+            meshZoom,
+            `https://api.mapbox.com/v4/mapbox.terrain-rgb/zoom/tLong/tLat.pngraw?access_token=${MAPBOX_TOKEN}`
+        );
         const canvas = document.createElement("canvas");
-
-        //const canvas = document.getElementById('elevCanvas');
-        ctx = canvas.getContext("2d");
+        var ctx = canvas.getContext("2d");
         canvas.width = 3 * 256;
         canvas.height = 3 * 256;
-        const elevSize = elevImage.width; // meshes must be square
+        const elevSize = elevImage.width;
 
-        ctx.drawImage(elevImage, 0, 0); // need to draw this for the data to be grabbed from canvas. 
-        var imageData = ctx.getImageData(0, 0, elevSize, elevSize);//image.data;  seemingly we need to write to a canvas then read it back agin.
+        ctx.drawImage(elevImage, 0, 0);
+        var imageData = ctx.getImageData(0, 0, elevSize, elevSize);
 
         const elev = new Float32Array((elevSize) * (elevSize));
 
@@ -279,103 +283,64 @@ window.onload = (event) => {
             }
         }
 
-        // Draw the calculated elev image // We don't really need to do this.
-        var imgData = ctx.createImageData(elevSize, elevSize);
-
-        // ctx.putImageData(imgData, 0, 0);
-
-        // expand elev with arbitrary size to 2^n  + 1
+        // expand elev with arbitrary size to 2^n + 1
         const paddedSize = 1 + Math.pow(2, Math.ceil(Math.log(elevSize) / Math.log(2)));
-        //     console.log(paddedSize);
         const paddedElev = new Float32Array(paddedSize * paddedSize);
-        for (var x = 0; x < paddedSize; x++) { // pad the right and bottom
+        for (var x = 0; x < paddedSize; x++) {
             for (var y = 0; y < paddedSize; y++) {
                 if ((x < elevSize) && (y < elevSize))
                     paddedElev[x * paddedSize + y] = elev[x * elevSize + y];
-                else paddedElev[x * paddedSize + y] = 0; // this makes a rough discontinuity. 
+                else paddedElev[x * paddedSize + y] = 0; // rough discontinuity at right/bottom edges
             }
         }
 
         // https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Resolution_and_Scale
         const lat = bounds.getNorthWest().lat;
         const crs = L.CRS.EPSG3857;
-        const meshCorner = tLatLng2LatLng(tLatLng, meshZoom); // again in lat lng
+        const meshCorner = tLatLng2LatLng(tLatLng, meshZoom);
 
         var pointsToMeshReferenced = new Array(pointsToMesh.length * 2);
         const meshOrig = crs.latLngToPoint(meshCorner, meshZoom);
-        // convert points from lat lng to image coords, referenced to mesh origin. also make into flat array
         for (var i = 0; i < pointsToMesh.length; i++) {
             var pt = crs.latLngToPoint(pointsToMesh[i], meshZoom);
             pointsToMeshReferenced[i * 2] = pt.x - meshOrig.x;
             pointsToMeshReferenced[(i * 2) + 1] = pt.y - meshOrig.y;
         }
-        //         console.log("pointsToMeshReferenced: " + pointsToMeshReferenced);
-
-        // //
-        // const martini = new Martini(paddedSize);
-        // const tile = martini.createTile(paddedElev);
-        // const mesh = tile.getBoundedMesh(err, pointsToMeshReferenced);
 
         const jini = new Jini(paddedElev);
         const mesh = jini.getBoundedMesh(pointsToMeshReferenced, outputMeshRes);
 
-        // draw a mesh
-        // for (var i = 0; i < mesh.triangles.length; i = i + 3) {
-
-        //     ctx.beginPath();
-        //     ax = mesh.vertices[mesh.triangles[i] * 3];
-        //     ay = mesh.vertices[(mesh.triangles[i] * 3) + 1];
-        //     bx = mesh.vertices[mesh.triangles[i + 1] * 3];
-        //     by = mesh.vertices[(mesh.triangles[i + 1] * 3) + 1];
-        //     cx = mesh.vertices[mesh.triangles[i + 2] * 3];
-        //     cy = mesh.vertices[(mesh.triangles[i + 2] * 3) + 1];
-        //     ctx.moveTo(ax, ay);
-        //     ctx.lineTo(bx, by);
-        //     ctx.lineTo(cx, cy);
-        //     ctx.lineTo(ax, ay);
-        //     ctx.strokeStyle = "#FF0000";
-        //     ctx.lineWidth = 0.5;
-        //     ctx.stroke();
-
-        // }
-
-        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        // figure the center of the user defined origin image
-        const userOrigin = originCollection.getLayers()
-        const userOriginCenter = userOrigin[0].getCenter()
-        // move it to pixel coords
+        // re-reference verts to user-placed origin image, in pixel space
+        const userOrigin = originCollection.getLayers();
+        const userOriginCenter = userOrigin[0].getCenter();
         const userOriginCenterPt = crs.latLngToPoint(userOriginCenter, meshZoom);
         userOriginCenterPt.x -= meshOrig.x;
         userOriginCenterPt.y -= meshOrig.y;
-        // get height at the user origin point
         const heightAtUserOrigin = elev[Math.floor(userOriginCenterPt.y) * elevSize + Math.floor(userOriginCenterPt.x)];
-        // shift everything to use new origin
-        for (var i = 0; i < mesh.vertices.length; i = i + 3) { // 
-            mesh.vertices[i] = userOriginCenterPt.x - mesh.vertices[i]; // x // flip it 
-            mesh.vertices[i + 1] = userOriginCenterPt.y - mesh.vertices[i + 1];  // y 
-            mesh.vertices[i + 2] = heightAtUserOrigin - mesh.vertices[i + 2]; // z
+
+        for (var i = 0; i < mesh.vertices.length; i = i + 3) {
+            mesh.vertices[i] = userOriginCenterPt.x - mesh.vertices[i]; // flip
+            mesh.vertices[i + 1] = userOriginCenterPt.y - mesh.vertices[i + 1];
+            mesh.vertices[i + 2] = heightAtUserOrigin - mesh.vertices[i + 2];
         }
-        // rotate about this origin 
+        // rotate about this origin
         const angle = -1 * userOrigin[0].getAngle('rad');
-        for (var i = 0; i < mesh.vertices.length; i = i + 3) { // 
+        for (var i = 0; i < mesh.vertices.length; i = i + 3) {
             const x = mesh.vertices[i];
             const y = mesh.vertices[i + 1];
-            mesh.vertices[i] = (x * Math.cos(angle)) - (y * Math.sin(angle)); // x 
-            mesh.vertices[i + 1] = (x * Math.sin(angle)) + (y * Math.cos(angle)); // y 
+            mesh.vertices[i] = (x * Math.cos(angle)) - (y * Math.sin(angle));
+            mesh.vertices[i + 1] = (x * Math.sin(angle)) + (y * Math.cos(angle));
         }
-        //  At zoom 0, one pixel would equal 156543.03 meters (assuming a tile size of 256 px):
+        // At zoom 0 one pixel = 156543.03 m at the equator
         const mtrsPerPix = (156543.03 * Math.cos(Math.PI / 180 * lat) / (Math.pow(2, meshZoom)));
-        // x and y are in pix. z is in metres
         for (var i = 0; i < mesh.vertices.length; i = i + 3) {
-            // invert x and z to switch LH to RH coords, and scale.
+            // invert x and z to switch LH to RH coords, then scale.
             mesh.vertices[i] = -1 * mesh.vertices[i] * mtrsPerPix;
             mesh.vertices[i + 1] = mesh.vertices[i + 1] * mtrsPerPix;
             mesh.vertices[i + 2] = -1 * mesh.vertices[i + 2];
         }
-        //const tBox = document.createElement("textarea");
 
-        var e = document.getElementById("filetype");
-        var fType = e.options[e.selectedIndex].value;
+        var fType = document.getElementById("filetype").value;
         if (fType == "obj") writeObj(mesh);
         if (fType == "dbacv") writeArrayCalc(mesh);
         if (fType == "txt") writeSoundVision(mesh);
@@ -387,10 +352,9 @@ window.onload = (event) => {
         reset();
     }
 
- 
 
-
-    async function getRegion(tLat, tLong, zoom, api) { // gets the tiles immediately east,south and south east
+    // fetch the 3x3 neighbourhood of tiles starting at (tLat, tLong)
+    async function getRegion(tLat, tLong, zoom, api) {
         const canvas = document.createElement("canvas");
         canvas.width = 3 * 256;
         canvas.height = 3 * 256;
@@ -411,20 +375,15 @@ window.onload = (event) => {
     }
 
     // https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
-
     function tLatLng2LatLng(aTLatLng, z) {
-        //    console.log("mesh tile: " + aTLatLng.tLat + " " + aTLatLng.tLng);
-        lng = (aTLatLng.tLng / Math.pow(2, z) * 360 - 180);
+        const lng = (aTLatLng.tLng / Math.pow(2, z) * 360 - 180);
         var n = Math.PI - 2 * Math.PI * aTLatLng.tLat / Math.pow(2, z);
-        lat = (180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n))));
-        return {
-            lat,
-            lng
-        };
+        const lat = (180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n))));
+        return { lat, lng };
     }
 
     function latlng2tile(aLatLng, zoom) {
-        const tLng = Math.floor(((aLatLng.lng + 180) / 360) * Math.pow(2, zoom)); // WRONG?
+        const tLng = Math.floor(((aLatLng.lng + 180) / 360) * Math.pow(2, zoom));
         const tLat = Math.floor(
             ((1 -
                 Math.log(
@@ -434,22 +393,16 @@ window.onload = (event) => {
                 2) *
             Math.pow(2, zoom)
         );
-        return {
-            tLat,
-            tLng
-        };
+        return { tLat, tLng };
     }
 
     function loadImage(url) {
-        //    console.log(`Downloading ${url}...`);
         return new Promise((accept, error) => {
             const img = new Image();
-            img.onload = () => {
-                accept(img);
-            };
+            img.onload = () => accept(img);
             img.onerror = error;
             img.crossOrigin = "anonymous";
             img.src = url;
         });
     }
-}
+};
