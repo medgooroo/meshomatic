@@ -1,7 +1,7 @@
 import { saveAs } from './export.js';
 import { getBoundingBox } from './mapp.js';
 
-export function writeDXF(mesh) {
+export function writeDXF(mesh, basename = "mesh") {
     // generic header, extents in "paper space" etc, set up 2 layers
     var bounds = getBoundingBox(mesh);
     var objText = `
@@ -149,5 +149,5 @@ EOF
     var blob = new Blob([objText], {
         type: "text/plain;charset=utf-8;"
     });
-    saveAs(blob, "mesh.dxf");
+    saveAs(blob, `${basename}.dxf`);
 }

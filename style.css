@@ -140,6 +140,42 @@ body,
     background-color: #28739E;
 }
 
+.form-style-9 ul li input[type="button"]:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+.form-style-9 ul li input[type="button"] + input[type="button"] {
+    margin-left: 8px;
+}
+
+.mesh-stats {
+    font: 12px Arial, Helvetica, sans-serif;
+    color: #444;
+    padding-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.spinner {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #ccc;
+    border-top-color: #216288;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+.spinner[hidden] {
+    display: none;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
 .title {
     font: 24px Arial, Helvetica, sans-serif;
 }

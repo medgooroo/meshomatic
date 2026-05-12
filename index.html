@@ -23,12 +23,18 @@
 
             <ul>
                 <li>
-                    <label for="res">Resolution:</label>
+                    <label for="provider">Source:</label>
+                    <select id="provider" class="field-style"></select>
+                </li>
+                <li>
+                    <label for="res">Max error (m):</label>
                     <select id="res" class="field-style">
-                        <option value="1">1M</option>
-                        <option value="5" selected>5M</option>
-                        <option value="10">10M</option>
-                        <option value="25">25M</option>
+                        <option value="0.1">0.1</option>
+                        <option value="0.25">0.25</option>
+                        <option value="0.5" selected>0.5</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="5">5</option>
                     </select>
                 </li>
                 <li>
@@ -45,6 +51,12 @@
                 </li>
                 <li>
                     <input type="button" value="Download" id="downloadMesh" />
+                </li>
+                <li>
+                    <div class="mesh-stats">
+                        <span id="meshSpinner" class="spinner" hidden></span>
+                        <span id="meshStats">Draw a polygon and place the origin.</span>
+                    </div>
                 </li>
             </ul>
         </form>

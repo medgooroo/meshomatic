@@ -21,6 +21,8 @@ import 'leaflet-geosearch/dist/geosearch.css';
 import earcut from 'earcut';
 
 import { Jini } from './jini.js';
+import { tile2latlng } from './elevation/tiles.js';
+import { providers, getProvider, providersCovering } from './elevation/index.js';
 import {
     writeObj,
     writeArrayCalc,
@@ -33,13 +35,25 @@ import { writeDXF } from './dxf.js';
 
 import '../style.css';
 
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
-if (!MAPBOX_TOKEN) {
-    console.warn('VITE_MAPBOX_TOKEN is not set — terrain fetches will fail. Set it in .env.');
+if (!import.meta.env.VITE_MAPBOX_TOKEN) {
+    console.warn('VITE_MAPBOX_TOKEN is not set — the Mapbox source will be hidden from the source dropdown. Set it in .env to enable.');
 }
 
 window.onload = () => {
-    document.getElementById("downloadMesh").onclick = function () { run(); };
+    const downloadBtn = document.getElementById("downloadMesh");
+    const statsEl = document.getElementById("meshStats");
+    const spinnerEl = document.getElementById("meshSpinner");
+    const providerSelect = document.getElementById("provider");
+
+    // Populate the source dropdown from the provider registry. If no providers
+    // pass their .available() check (e.g. Mapbox missing token, Terrarium
+    // unreachable), we leave the dropdown empty and show a status message.
+    for (const p of providers) {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = p.name;
+        providerSelect.appendChild(opt);
+    }
 
     var layerOsm = new L.TileLayer(
         'https://{s}.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
@@ -90,9 +104,6 @@ window.onload = () => {
     });
 
     map.addControl(drawControl);
-    map.on(L.Draw.Event.CREATED, function (e) {
-        drawnItems.addLayer(e.layer);
-    });
 
     var baseMaps = {
         "OSM": layerOsm,
@@ -176,128 +187,214 @@ window.onload = () => {
         originCollection.bringToFront();
     }
 
-    async function run() {
-        var b = document.getElementById("downloadMesh");
-        b.onclick = function () { };
-        b.setAttribute('value', "Processing...");
-        setTimeout(function () { dumpPoints(); }, 50);
+    // ----- mesh build state -----
+    // Cached meshes keyed by provider id. Cleared whenever the input geometry,
+    // origin or error margin changes (everything in the inputs). NOT cleared
+    // when the user switches the source dropdown — that just changes which
+    // cached mesh is displayed in the live preview.
+    const meshCache = new Map();
+    let buildToken = 0;
+    let debounceTimer = null;
+    const REBUILD_DEBOUNCE_MS = 300;
+
+    function setStatus(text, busy) {
+        statsEl.textContent = text;
+        spinnerEl.hidden = !busy;
+    }
+    function setStats(mesh) {
+        const tris = mesh.triangles.length / 3;
+        const verts = mesh.vertices.length / 3;
+        setStatus(`Triangles: ${tris.toLocaleString()} / Vertices: ${verts.toLocaleString()}`, false);
     }
 
-    async function reset() {
-        var b = document.getElementById("downloadMesh");
-        b.onclick = function () {
-            run();
-        };
-        b.setAttribute("value", "Download");
+    function readyState() {
+        const hasPoly = drawnItems.getLayers().some(l => l instanceof L.Polygon);
+        const hasImg = imgCollection.getLayers().length > 0;
+        const hasOrigin = originCollection.getLayers().length > 0;
+        if (!hasPoly && !hasImg) return { ready: false, msg: "Draw a polygon to mesh." };
+        if (!hasOrigin) return { ready: false, msg: "Place the origin." };
+        return { ready: true };
     }
 
-    async function dumpPoints() {
-        const imgs = imgCollection.getLayers();
-        const layer = drawnItems.getLayers();
-        const origin = originCollection.getLayers();
-
-        if (origin.length < 1) {
-            alert("No origin defined");
-            reset();
-            return;
-        }
-        var b = document.getElementById("downloadMesh");
-        b.setAttribute('value', "Processing...");
-        b.onclick = '';
-
-        var polyAsPoints = [];
-        var shape;
-        layer.forEach(function (curr) {
-            if (curr instanceof L.Polygon) {
-                shape = curr.getLatLngs();
-            }
+    function gatherInputPoints() {
+        const layers = drawnItems.getLayers();
+        let shape;
+        layers.forEach(curr => {
+            if (curr instanceof L.Polygon) shape = curr.getLatLngs();
         });
         if (shape) {
-            // we're only interested in the first poly. make it into a format earcut understands.
-            for (var i = 0; i < shape[0].length; i++) {
-                polyAsPoints.push(shape[0][i].lat);
-                polyAsPoints.push(shape[0][i].lng);
+            const polyAsPoints = [];
+            for (let i = 0; i < shape[0].length; i++) {
+                polyAsPoints.push(shape[0][i].lat, shape[0][i].lng);
             }
-            var tris = earcut(polyAsPoints);
-            const output = tris.map(i => shape[0][i]);
-            genMesh(output);
+            const tris = earcut(polyAsPoints);
+            return tris.map(i => shape[0][i]);
         }
-        // fallback to just using the bounds of a loaded image.
-        else if (imgs.length > 0) {
-            const corners = imgs[0].getCorners();
-            var tris = [
-                corners[0],
-                corners[1],
-                corners[2],
-                corners[1],
-                corners[3],
-                corners[2]
-            ];
-            genMesh(tris);
+        const imgs = imgCollection.getLayers();
+        if (imgs.length > 0) {
+            // fallback to image bounds
+            const c = imgs[0].getCorners();
+            return [c[0], c[1], c[2], c[1], c[3], c[2]];
         }
-        else {
-            alert("Define a polygon or image to create a mesh");
-            reset();
+        return null;
+    }
+
+    // Schedule a live preview rebuild for the currently selected provider.
+    // `invalidate` clears all cached meshes (use when inputs changed). Pass
+    // false when only the dropdown selection changed — then cached meshes
+    // for other providers survive.
+    function scheduleRebuild({ invalidate = true } = {}) {
+        if (invalidate) meshCache.clear();
+        clearTimeout(debounceTimer);
+        const state = readyState();
+        if (!state.ready) {
+            setStatus(state.msg, false);
+            return;
+        }
+        setStatus("Calculating…", true);
+        debounceTimer = setTimeout(runLivePreview, REBUILD_DEBOUNCE_MS);
+    }
+
+    // Builds (or fetches from cache) the mesh for one specific provider.
+    // Returns null on failure. Doesn't touch the UI directly.
+    async function buildForProvider(provider) {
+        const cached = meshCache.get(provider.id);
+        if (cached) return cached;
+        const points = gatherInputPoints();
+        if (!points) return null;
+        const mesh = await buildMesh(points, provider);
+        meshCache.set(provider.id, mesh);
+        return mesh;
+    }
+
+    // Live preview for the selected source. Cancellable via buildToken so a
+    // change made while a build is in flight wins.
+    async function runLivePreview() {
+        const state = readyState();
+        if (!state.ready) {
+            setStatus(state.msg, false);
+            return;
+        }
+        const provider = getProvider(providerSelect.value);
+        if (!provider) return;
+        const cached = meshCache.get(provider.id);
+        if (cached) {
+            setStats(cached);
+            return;
+        }
+        const token = ++buildToken;
+        setStatus("Calculating…", true);
+        try {
+            const mesh = await buildForProvider(provider);
+            if (token !== buildToken) return;
+            if (!mesh) return;
+            setStats(mesh);
+        } catch (err) {
+            if (token !== buildToken) return;
+            console.error(err);
+            setStatus("Error: " + err.message, false);
         }
     }
 
+    downloadBtn.onclick = async () => {
+        const points = gatherInputPoints();
+        if (!points) return;
+        const bounds = L.latLngBounds(points);
+        const targets = providersCovering(bounds);
+        if (targets.length === 0) {
+            setStatus("No elevation source covers this area.", false);
+            return;
+        }
 
-    async function genMesh(pointsToMesh) {
+        downloadBtn.disabled = true;
+        const label = targets.length === 1
+            ? "Building mesh…"
+            : `Building ${targets.length} meshes…`;
+        setStatus(label, true);
+        try {
+            // Build any not cached, in parallel
+            const meshes = await Promise.all(targets.map(p => buildForProvider(p)));
+            const fType = document.getElementById("filetype").value;
+            const useSuffix = targets.length > 1;
+            for (let i = 0; i < targets.length; i++) {
+                const provider = targets[i];
+                const mesh = meshes[i];
+                if (!mesh) continue;
+                const basename = useSuffix ? `mesh-${provider.id}` : "mesh";
+                dispatchWrite(mesh, fType, basename);
+            }
+            // Restore the preview count for the currently-selected source
+            const selectedProvider = getProvider(providerSelect.value);
+            const previewMesh = meshCache.get(selectedProvider?.id);
+            if (previewMesh) setStats(previewMesh);
+        } catch (err) {
+            console.error(err);
+            setStatus("Download failed: " + err.message, false);
+        } finally {
+            downloadBtn.disabled = false;
+        }
+    };
+
+    function dispatchWrite(mesh, fType, basename) {
+        if (fType === "obj") writeObj(mesh, basename);
+        else if (fType === "dbacv") writeArrayCalc(mesh, basename);
+        else if (fType === "txt") writeSoundVision(mesh, basename);
+        else if (fType === "dae") writeCollada(mesh, basename);
+        else if (fType === "bprint") writeBlueprint(mesh, basename);
+        else if (fType === "mappDef") writeMapp(mesh, 0, 0, basename);
+        else if (fType === "mappUpload") writeMapp(mesh, 1, 0, basename);
+        else if (fType === "dxf") writeDXF(mesh, basename);
+    }
+
+    // ----- subscribe to changes that should re-build -----
+    map.on(L.Draw.Event.CREATED, (e) => {
+        drawnItems.addLayer(e.layer);
+        scheduleRebuild();
+    });
+    map.on(L.Draw.Event.EDITED, scheduleRebuild);
+    map.on(L.Draw.Event.DELETED, scheduleRebuild);
+
+    // When an origin or background image is added, wire its own update events
+    // (drag/rotate/scale fire on the layer itself, not on the collection).
+    function wireOverlayLayer(layer) {
+        if (!layer || typeof layer.on !== 'function') return;
+        layer.on('update edit dragend', scheduleRebuild);
+    }
+    originCollection.on('layeradd', (e) => { wireOverlayLayer(e.layer); scheduleRebuild(); });
+    originCollection.on('layerremove', scheduleRebuild);
+    imgCollection.on('layeradd', (e) => { wireOverlayLayer(e.layer); scheduleRebuild(); });
+    imgCollection.on('layerremove', scheduleRebuild);
+
+    document.getElementById("res").addEventListener('change', () => scheduleRebuild());
+    // Source dropdown change: don't invalidate other providers' cached meshes,
+    // just display the newly-selected source's count (rebuild only if it isn't
+    // cached yet).
+    providerSelect.addEventListener('change', () => scheduleRebuild({ invalidate: false }));
+
+    // initial status
+    if (providers.length === 0) {
+        setStatus("No elevation source available. Set VITE_MAPBOX_TOKEN or check network access to terrarium tiles.", false);
+        downloadBtn.disabled = true;
+    } else {
+        setStatus(readyState().msg, false);
+    }
+
+
+    async function buildMesh(pointsToMesh, provider) {
         const bounds = L.latLngBounds(pointsToMesh);
         const distance = bounds.getNorthWest().distanceTo(bounds.getNorthEast());
         const metresAtZeroZoom = 40075015.68; // tile size 256 * px/m at zoom 0
-        var meshZoom = Math.floor(Math.abs(Math.log2(distance / metresAtZeroZoom)));
-        if (meshZoom > 15) meshZoom = 15; // clamp to data resolution
+        let meshZoom = Math.floor(Math.abs(Math.log2(distance / metresAtZeroZoom)));
+        meshZoom = Math.min(meshZoom, provider.maxZoom);
 
-        var outputMeshRes = parseFloat(document.getElementById("res").value);
+        const maxError = parseFloat(document.getElementById("res").value);
 
-        const tLatLng = latlng2tile(bounds.getNorthWest(), meshZoom);
-
-        const elevImage = await getRegion(
-            tLatLng.tLat,
-            tLatLng.tLng,
-            meshZoom,
-            `https://api.mapbox.com/v4/mapbox.terrain-rgb/zoom/tLong/tLat.pngraw?access_token=${MAPBOX_TOKEN}`
-        );
-        const canvas = document.createElement("canvas");
-        var ctx = canvas.getContext("2d");
-        canvas.width = 3 * 256;
-        canvas.height = 3 * 256;
-        const elevSize = elevImage.width;
-
-        ctx.drawImage(elevImage, 0, 0);
-        var imageData = ctx.getImageData(0, 0, elevSize, elevSize);
-
-        const elev = new Float32Array((elevSize) * (elevSize));
-
-        var imgIndex = 0;
-        // decode terrain values https://docs.mapbox.com/help/troubleshooting/access-elevation-data/
-        for (let y = 0; y < elevSize; y++) {
-            for (let x = 0; x < elevSize; x++) {
-                const k = (imgIndex) * 4;
-                const r = imageData.data[k + 0];
-                const g = imageData.data[k + 1];
-                const b = imageData.data[k + 2];
-                elev[y * elevSize + x] = (r * 256 * 256 + g * 256.0 + b) / 10.0 - 10000.0;
-                imgIndex++;
-            }
-        }
-
-        // expand elev with arbitrary size to 2^n + 1
-        const paddedSize = 1 + Math.pow(2, Math.ceil(Math.log(elevSize) / Math.log(2)));
-        const paddedElev = new Float32Array(paddedSize * paddedSize);
-        for (var x = 0; x < paddedSize; x++) {
-            for (var y = 0; y < paddedSize; y++) {
-                if ((x < elevSize) && (y < elevSize))
-                    paddedElev[x * paddedSize + y] = elev[x * elevSize + y];
-                else paddedElev[x * paddedSize + y] = 0; // rough discontinuity at right/bottom edges
-            }
-        }
+        const { elev, elevSize, nwTile } = await provider.fetch(bounds, meshZoom);
 
         // https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Resolution_and_Scale
         const lat = bounds.getNorthWest().lat;
         const crs = L.CRS.EPSG3857;
-        const meshCorner = tLatLng2LatLng(tLatLng, meshZoom);
+        const meshCorner = tile2latlng(nwTile, meshZoom);
 
         var pointsToMeshReferenced = new Array(pointsToMesh.length * 2);
         const meshOrig = crs.latLngToPoint(meshCorner, meshZoom);
@@ -307,8 +404,8 @@ window.onload = () => {
             pointsToMeshReferenced[(i * 2) + 1] = pt.y - meshOrig.y;
         }
 
-        const jini = new Jini(paddedElev);
-        const mesh = jini.getBoundedMesh(pointsToMeshReferenced, outputMeshRes);
+        const jini = new Jini(elev);
+        const mesh = jini.getBoundedMesh(pointsToMeshReferenced, maxError);
 
         // re-reference verts to user-placed origin image, in pixel space
         const userOrigin = originCollection.getLayers();
@@ -340,69 +437,8 @@ window.onload = () => {
             mesh.vertices[i + 2] = -1 * mesh.vertices[i + 2];
         }
 
-        var fType = document.getElementById("filetype").value;
-        if (fType == "obj") writeObj(mesh);
-        if (fType == "dbacv") writeArrayCalc(mesh);
-        if (fType == "txt") writeSoundVision(mesh);
-        if (fType == "dae") writeCollada(mesh);
-        if (fType == "bprint") writeBlueprint(mesh);
-        if (fType == "mappDef") writeMapp(mesh, 0);
-        if (fType == "mappUpload") writeMapp(mesh, 1);
-        if (fType == "dxf") writeDXF(mesh);
-        reset();
+        return mesh;
     }
 
 
-    // fetch the 3x3 neighbourhood of tiles starting at (tLat, tLong)
-    async function getRegion(tLat, tLong, zoom, api) {
-        const canvas = document.createElement("canvas");
-        canvas.width = 3 * 256;
-        canvas.height = 3 * 256;
-        const ctx = canvas.getContext("2d");
-        for (let x = 0; x < 3; x++) {
-            const _tLong = tLong + x;
-            for (let y = 0; y < 3; y++) {
-                const _tLat = tLat + y;
-                const url = api
-                    .replace("zoom", zoom)
-                    .replace("tLat", _tLat)
-                    .replace("tLong", _tLong);
-                let img = await loadImage(url);
-                ctx.drawImage(img, x * 256, y * 256);
-            }
-        }
-        return canvas;
-    }
-
-    // https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
-    function tLatLng2LatLng(aTLatLng, z) {
-        const lng = (aTLatLng.tLng / Math.pow(2, z) * 360 - 180);
-        var n = Math.PI - 2 * Math.PI * aTLatLng.tLat / Math.pow(2, z);
-        const lat = (180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n))));
-        return { lat, lng };
-    }
-
-    function latlng2tile(aLatLng, zoom) {
-        const tLng = Math.floor(((aLatLng.lng + 180) / 360) * Math.pow(2, zoom));
-        const tLat = Math.floor(
-            ((1 -
-                Math.log(
-                    Math.tan((aLatLng.lat * Math.PI) / 180) + 1 / Math.cos((aLatLng.lat * Math.PI) / 180)
-                ) /
-                Math.PI) /
-                2) *
-            Math.pow(2, zoom)
-        );
-        return { tLat, tLng };
-    }
-
-    function loadImage(url) {
-        return new Promise((accept, error) => {
-            const img = new Image();
-            img.onload = () => accept(img);
-            img.onerror = error;
-            img.crossOrigin = "anonymous";
-            img.src = url;
-        });
-    }
 };

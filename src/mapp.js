@@ -52,7 +52,7 @@ async function getUserFiles() {
 }
 
 
-export async function writeMapp(mesh, userMapp, listenHeight = 0) {
+export async function writeMapp(mesh, userMapp, listenHeight = 0, basename = "mesh") {
     let mappFiles;
     if (userMapp == 0) {
         mappFiles = await getDefaultFiles("mapp/default.mapp");
@@ -135,7 +135,7 @@ export async function writeMapp(mesh, userMapp, listenHeight = 0) {
         resultZip.file(mappFiles[index].name, blob);
     });
     var zipFile = await resultZip.generateAsync({ type: "blob" });
-    saveAs(zipFile, "mesh.mapp");
+    saveAs(zipFile, `${basename}.mapp`);
 }
 
 

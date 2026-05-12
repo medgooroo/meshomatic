@@ -17,7 +17,7 @@ export function saveAs(content, fName) {
     }, 100);
 }
 
-export function writeSoundVision(mesh) {
+export function writeSoundVision(mesh, basename = "mesh") {
     var objText = `"; Exported by meshomatic thing"
 "; "
 ";   using Outside is front (white)"
@@ -41,10 +41,10 @@ export function writeSoundVision(mesh) {
     var blob = new Blob([objText], {
         type: "text/plain;charset=utf-8;"
     });
-    saveAs(blob, "mesh.txt");
+    saveAs(blob, `${basename}.txt`);
 }
 
-export function writeBlueprint(mesh) {
+export function writeBlueprint(mesh, basename = "mesh") {
     var objText = "";
     for (var i = 0; i < 8; i++) objText += '";"\n';
     objText += '"; LengthUnit","m"\n";"\n';
@@ -62,10 +62,10 @@ export function writeBlueprint(mesh) {
     var blob = new Blob([objText], {
         type: "text/plain;charset=utf-8;"
     });
-    saveAs(blob, "mesh.xar");
+    saveAs(blob, `${basename}.xar`);
 }
 
-export function writeObj(mesh) {
+export function writeObj(mesh, basename = "mesh") {
     // https://en.wikipedia.org/wiki/Wavefront_.obj_file - NOT ZERO INDEXED.
     var objText = "";
     for (var i = 0; i < mesh.vertices.length; i = i + 3) {
@@ -77,10 +77,10 @@ export function writeObj(mesh) {
     var blob = new Blob([objText], {
         type: "text/plain;charset=utf-8;"
     });
-    saveAs(blob, "mesh.obj");
+    saveAs(blob, `${basename}.obj`);
 }
 
-export function writeArrayCalc(mesh) {
+export function writeArrayCalc(mesh, basename = "mesh") {
 
     var doc = document.implementation.createDocument("", "", null);
     var main = doc.createElement("ArrayCalc");
@@ -186,10 +186,10 @@ export function writeArrayCalc(mesh) {
     var blob = new Blob([xmlText], {
         type: "application/xml;charset=utf-8;"
     });
-    saveAs(blob, "mesh.dbacv");
+    saveAs(blob, `${basename}.dbacv`);
 }
 
-export function writeCollada(mesh) {
+export function writeCollada(mesh, basename = "mesh") {
     // https://www.codeproject.com/Articles/625701/COLLADA-TinyXML-and-OpenGL
     var doc = document.implementation.createDocument("", "", null);
     var main = doc.createElement("COLLADA");
@@ -300,5 +300,5 @@ export function writeCollada(mesh) {
     var blob = new Blob([xmlText], {
         type: "application/xml;charset=utf-8;"
     });
-    saveAs(blob, "mesh.dae");
+    saveAs(blob, `${basename}.dae`);
 }
