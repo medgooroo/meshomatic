@@ -5,9 +5,17 @@
 
 export const TILE_SIZE = 256;
 
+// Fold an arbitrary longitude into [-180, 180). Leaflet hands back un-wrapped
+// values after panning across the antimeridian (e.g. +139° comes back as -221°)
+// which would otherwise produce out-of-range negative tile X.
+function normaliseLng(lng) {
+    return ((lng + 180) % 360 + 360) % 360 - 180;
+}
+
 export function latlng2tile(latLng, zoom) {
     const n = Math.pow(2, zoom);
-    const tLng = Math.floor(((latLng.lng + 180) / 360) * n);
+    const lng = normaliseLng(latLng.lng);
+    const tLng = Math.floor(((lng + 180) / 360) * n);
     const latRad = (latLng.lat * Math.PI) / 180;
     const tLat = Math.floor(
         ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * n
@@ -23,7 +31,7 @@ export function tile2latlng({ tLat, tLng }, zoom) {
     return { lat, lng };
 }
 
-function loadImage(url) {
+export function loadImage(url) {
     return new Promise((resolve, reject) => {
         const img = new Image();
         img.onload = () => resolve(img);
@@ -37,13 +45,21 @@ function loadImage(url) {
 // stitch them into one canvas, decode each pixel to metres using `decode`,
 // and return a Float32Array.
 //
-// urlFor: ({ tLat, tLng, zoom }) => string
-// decode: (r, g, b) => metres
+// Either `urlFor` (single URL per tile) or `loadTile` (custom loader, e.g.
+// for cascading-fallback providers) is required.
+//   urlFor:   ({ tLng, tLat, zoom }) => string
+//   loadTile: ({ tLng, tLat, zoom }) => Promise<HTMLImageElement | null>
+//             — return null to leave that tile blank in the grid (canvas
+//             stays at rgba(0,0,0,0); decode() sees (0,0,0) and decides
+//             what that means).
+//   decode:   (r, g, b) => metres
 //
 // Returns { elev, elevSize, nwTile } where elevSize is the side length in
 // pixels (always = max(spanX, spanY) tiles * TILE_SIZE, so the buffer is
 // square — Jini requires that).
-export async function fetchTileGrid({ bounds, zoom, urlFor, decode }) {
+export async function fetchTileGrid({ bounds, zoom, urlFor, loadTile, decode }) {
+    const load = loadTile ?? (async (coords) => loadImage(urlFor(coords)));
+
     const nwTile = latlng2tile(bounds.getNorthWest(), zoom);
     const seTile = latlng2tile(bounds.getSouthEast(), zoom);
     const spanX = (seTile.tLng - nwTile.tLng) + 1;
@@ -58,13 +74,16 @@ export async function fetchTileGrid({ bounds, zoom, urlFor, decode }) {
     const fetches = [];
     for (let x = 0; x < span; x++) {
         for (let y = 0; y < span; y++) {
-            const url = urlFor({ tLng: nwTile.tLng + x, tLat: nwTile.tLat + y, zoom });
-            fetches.push(loadImage(url).then(img => ({ img, x, y })));
+            fetches.push(
+                load({ tLng: nwTile.tLng + x, tLat: nwTile.tLat + y, zoom })
+                    .then(img => ({ img, x, y }))
+            );
         }
     }
     const tiles = await Promise.all(fetches);
     for (const { img, x, y } of tiles) {
-        ctx.drawImage(img, x * TILE_SIZE, y * TILE_SIZE);
+        if (img) ctx.drawImage(img, x * TILE_SIZE, y * TILE_SIZE);
+        // tiles that came back null stay at canvas default (0,0,0,0)
     }
 
     const side = span * TILE_SIZE;

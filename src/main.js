@@ -43,17 +43,6 @@ window.onload = () => {
     const downloadBtn = document.getElementById("downloadMesh");
     const statsEl = document.getElementById("meshStats");
     const spinnerEl = document.getElementById("meshSpinner");
-    const providerSelect = document.getElementById("provider");
-
-    // Populate the source dropdown from the provider registry. If no providers
-    // pass their .available() check (e.g. Mapbox missing token, Terrarium
-    // unreachable), we leave the dropdown empty and show a status message.
-    for (const p of providers) {
-        const opt = document.createElement('option');
-        opt.value = p.id;
-        opt.textContent = p.name;
-        providerSelect.appendChild(opt);
-    }
 
     var layerOsm = new L.TileLayer(
         'https://{s}.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
@@ -275,7 +264,9 @@ window.onload = () => {
             setStatus(state.msg, false);
             return;
         }
-        const provider = getProvider(providerSelect.value);
+        // Live preview reflects the first registered provider — the dropdown
+        // is gone, so there's no per-source selection any more.
+        const provider = providers[0];
         if (!provider) return;
         const cached = meshCache.get(provider.id);
         if (cached) {
@@ -323,9 +314,8 @@ window.onload = () => {
                 const basename = useSuffix ? `mesh-${provider.id}` : "mesh";
                 dispatchWrite(mesh, fType, basename);
             }
-            // Restore the preview count for the currently-selected source
-            const selectedProvider = getProvider(providerSelect.value);
-            const previewMesh = meshCache.get(selectedProvider?.id);
+            // Restore the preview count after the multi-export run
+            const previewMesh = meshCache.get(providers[0]?.id);
             if (previewMesh) setStats(previewMesh);
         } catch (err) {
             console.error(err);
@@ -366,10 +356,6 @@ window.onload = () => {
     imgCollection.on('layerremove', scheduleRebuild);
 
     document.getElementById("res").addEventListener('change', () => scheduleRebuild());
-    // Source dropdown change: don't invalidate other providers' cached meshes,
-    // just display the newly-selected source's count (rebuild only if it isn't
-    // cached yet).
-    providerSelect.addEventListener('change', () => scheduleRebuild({ invalidate: false }));
 
     // initial status
     if (providers.length === 0) {
